@@ -14,8 +14,8 @@ DEFINE time_frame = '2016';
 create table rolling12_&time_frame as
 select
 case when stre.indiv_id!= ecom.indiv_id then coalesce(stre.indiv_id, ecom.indiv_id)
-when stre.indiv_id >0 then stre.indiv_id
-when ecom.indiv_id >0 then ecom.indiv_id end as indiv_id,
+when stre.indiv_id not null then stre.indiv_id
+when ecom.indiv_id not null then ecom.indiv_id end as indiv_id,
 sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0))) as total_sales,
 sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0))) as total_trans,
 case when stre.indiv_id= ecom.indiv_id then 'omni'
@@ -36,10 +36,12 @@ from (select
     select
     ecom.indiv_id,
     count(distinct ecom.order_id) as rolling12ecom_trans,
-    sum(ecom.dmnd_net_ttl_amt) as rolling12ecom_sales
+    sum(ecom.flfll_net_ttl_amt) as rolling12ecom_sales
+    --fulfilled sales
     from ua_ecom_order_dtl   ecom
-    inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
-    where tm.day_idnt between  (&end_day_idnt - 1000 + 1) and &end_day_idnt
+    inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+    --filters on the first fulfill date
+    where tm.day_idnt between  (&end_day_idnt - 1000 + 1) and &
     group by ecom.indiv_id) 
     ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
