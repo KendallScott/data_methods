@@ -47,53 +47,6 @@ union all
     group by ecom.indiv_id)
 group by indiv_id;
 
--- --new customers TY  
--- create table new_cust_&mthty as
---     select distinct a.indiv_id
---     from rolling12trans_&mthty a
---     inner join ua_individual_agg b on a.indiv_id = b.indiv_id
---     inner join ua_pos_tm_day     c on to_date(b.first_purchase_dt) = to_date(c.day_dt)
---     where c.day_idnt between &start_day_idnt_ty and &end_day_idnt_ty;
-
--- --reactivated customers TY
--- create table last_shop_excl_mth_&mthty as
---   select indiv_id
---          ,max(last_shop) as last_shop
---   from
---     (select
---        a.indiv_id
---       ,max(a.day_idnt) as last_shop
---     from         ua_pos_trans_dtl a
---     inner join   ua_store         b on a.loc_key = b.loc_key
---     where a.wk_idnt < &start_wk_idnt_ty
---       and a.trans_typ_key in (19,22,33)
---       and b.distt_idnt != '999'
---     group by a.indiv_id
--- union all
---    select
---        a.indiv_id
---       ,max(b.day_idnt) as last_shop
---     from         ua_ecom_order_dtl  a
---     inner join   ua_pos_tm_day      b on to_date(a.dmnd_dt) = to_date(b.day_dt)
---     where b.wk_idnt < &start_wk_idnt_ty
---     and b.day_idnt < &start_day_idnt_ty
---     group by indiv_id)
--- group by indiv_id;
-     
--- create table react_cust_&mthty as
---     select distinct indiv_id
---     from rolling12trans_&mthty
---     where indiv_id in
---     (select distinct indiv_id from last_shop_excl_mth_&mthty where last_shop <= (&end_day_idnt_ty - 1000));
-
--- --new and reactivated customers TY
---  create table new_react_cust_&mthty as
---     select distinct indiv_id
---     from new_cust_&mthty
---     union
---     select distinct indiv_id
---     from react_cust_&mthty;
-
 
 ----------------------------get LY Yearly customers--------------------------------
 
@@ -159,85 +112,6 @@ when a.rolling12trans > 2 and a.rolling12trans <= 5 then 'Middle'
 else 'Top' end) as custgroup
 from rolling12trans_&mthly a
 left join cust_&mthlly b on a.indiv_id=b.indiv_id;
-
--- --new customers LY  
--- create table new_cust_&mthly as
---     select distinct a.indiv_id
---     from rolling12trans_&mthly a
---     inner join ua_individual_agg b on a.indiv_id = b.indiv_id
---     inner join ua_pos_tm_day     c on to_date(b.first_purchase_dt) = to_date(c.day_dt)
---     where c.day_idnt between &start_day_idnt_ly and &end_day_idnt_ly;
-
--- --reactivated customers LY
--- create table last_shop_excl_mth_&mthly as
---   select indiv_id
---          ,max(last_shop) as last_shop
---   from
---     (select
---        a.indiv_id
---       ,max(a.day_idnt) as last_shop
---     from         ua_pos_trans_dtl a
---     inner join   ua_store         b on a.loc_key = b.loc_key
---     where a.wk_idnt < &start_wk_idnt_ly
---       and a.trans_typ_key in (19,22,33)
---       and b.distt_idnt != '999'
---     group by a.indiv_id
--- union all
---    select
---        a.indiv_id
---       ,max(b.day_idnt) as last_shop
---     from         ua_ecom_order_dtl  a
---     inner join   ua_pos_tm_day      b on to_date(a.dmnd_dt) = to_date(b.day_dt)
---     where b.wk_idnt < &start_wk_idnt_ly
---     and b.day_idnt < &start_day_idnt_ly
---     group by indiv_id)
--- group by indiv_id;
-     
--- create table react_cust_&mthly as
---     select distinct indiv_id
---     from rolling12trans_&mthly
---     where indiv_id in
---     (select distinct indiv_id from last_shop_excl_mth_&mthly where last_shop <= (&end_day_idnt_ly - 1000));
-
--- --new and reactivated customers LY
---  create table new_react_cust_&mthly as
---     select distinct indiv_id
---     from new_cust_&mthly
---     union
---     select distinct indiv_id
---     from react_cust_&mthly;
-
--- --define customer groups
--- create table cust_groups_&mthly as
---     select
---        case when b.indiv_id is not null then 'New/react'
---             when a.rolling12trans >= 6  then 'Top'
---             when a.rolling12trans >= 3  then 'Middle'
---             when a.rolling12trans >= 1  then 'Bottom'
---                                         else 'z.error'
---        end custgroup
---       ,a.indiv_id
---       -- ,a.lastshop
---     from        rolling12trans_&mthly a
---       left join new_react_cust_&mthly b on a.indiv_id = b.indiv_id;
-
-
-----------------------
--- drop table rolling12trans_&mthty purge;
--- drop table new_cust_&mthty purge;
--- drop table last_shop_excl_mth_&mthty purge;
--- drop table react_cust_&mthty purge;
--- drop table new_react_cust_&mthty purge;
--- drop table cust_groups_&mthty Purge;
-
--- drop table rolling12trans_&mthly purge;
--- drop table new_cust_&mthly purge;
--- drop table last_shop_excl_mth_&mthly purge;
--- drop table react_cust_&mthly purge;
--- drop table new_react_cust_&mthly purge;
--- drop table cust_groups_&mthly Purge;
-
-
 --------------------customer migration code with added dimensions-----------------
 
 ----START ROCK------
@@ -841,10 +715,6 @@ left join first_trxn_&mthly b
   ON a.indiv_id=b.indiv_id
 ) a;
 
--- Select Custgroup, Count(*) From First_Rest_Trxn_&mthly
--- where Rest_trxn=0
--- group by Custgroup
-
 --Required datacuts
 Select Custgroup, Count(*), sum(rolling12sales) as rolling12sales, sum(rolling12trans) as rolling12trans
 From First_Rest_Trxn_&mthly
@@ -860,43 +730,7 @@ From First_Rest_Trxn_&mthly
 Where  rest_trxn <>0
 group by Custgroup
 
-
--- Select * From First_Rest_Trxn_&mthty
--- Where Rest_Trxn=0 And Rest_Sales=0 And Custgroup='Top' And Rownum<100
--- --rest trxn<>0 and sales=0
--- 1000053193946
--- 1000213246887
--- --rest trxn=0 and sales=0
--- 1000246250238
--- 1000257365168
- 
--- Select * From Cust_Groups_&mthty 
--- -- First_Trxn_&mthty 
--- Where Indiv_Id In (1000246250238,1000257365168);
--- 1000213246887 5.39  1
--- 1000053193946 11.66 2
-
--- 1000257365168 68.96 6
--- 1000246250238 27.1  7
-
--- 1000053193946 6 11.66 Top
--- 1000213246887 7 5.39  Top
-
--- 1000246250238 7 27.1  Top
--- 1000257365168 6 68.96 Top
-
---     select a.*
---     from ua_pos_trans_dtl a
---     inner join ua_store   b on a.loc_key = b.loc_key
---     where wk_idnt between &start_wk_idnt_ty and &end_wk_idnt_ty
---     and a.trans_typ_key in (19,22,33)
---     And Distt_Idnt != '999'
---     and indiv_id in (1000246250238)
---     group by a.indiv_id
-
-
-
-/******************************* NTZ Match rate ************************************/
+******************************* NTZ Match rate ************************************/
 
 create temp table custAcx as
 select distinct indiv_id, pos_trans_key
