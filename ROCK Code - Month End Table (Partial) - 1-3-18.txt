@@ -1,10 +1,11 @@
+
 -----Start ROCK code-----
 DEFINE start_day_idnt = '2017302';
 DEFINE end_day_idnt = '2017336';
 DEFINE start_wk_idnt = '201744';
 DEFINE end_wk_idnt = '201748';
 DEFINE end_dt = '30dec2017';
-DEFINE mth = 'dec17';
+DEFINE mth = 'DEC';
 
 --rolling12 
 create table rolling12trans_&mth as
@@ -38,38 +39,6 @@ from (select
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
---rolling12  LY
-create table rolling12trans_LY_&mth as
-select
-(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id,
-sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0)))                                                           as total_sales,
-sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0)))                                                           as total_trans,
-sum((coalesce(stre.rolling12store_units,0))+ (coalesce(ecom.rolling12ecom_units, 0)))                                                           as total_units,
-sum(stre.rolling12store_gm)                                                                                                                     as gm_store,
-sum(stre.rolling12store_sales)                                                                                                                  as sales_store,
-(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
-from (select
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                       as rolling12store_trans,
-          sum(dtl.extended_sls_amt)                               as rolling12store_sales,
-          sum(dtl.grs_mrgn_amt)                                   as rolling12store_gm,
-          sum(dtl.qty)                                            as rolling12store_units
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between ( &end_wk_idnt - 200 + 1) and (&end_wk_idnt - 100) and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-        group by str.indiv_id) stre
-    full outer join(
-      select
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                           as rolling12ecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                             as rolling12ecom_sales,
-        sum(ecom.flfll_unit_cnt)                                as rolling12ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.day_idnt between  (&end_day_idnt - 2000 + 1) and (&end_day_idnt -1000)
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
-group by stre.indiv_id, ecom.indiv_id;
-
 --month sales TY
 create table monthshoppers_&mth as
 select 
@@ -77,6 +46,7 @@ select
   else coalesce(stre.indiv_id, ecom.indiv_id) end)                                                                                      as indiv_id,
 sum((coalesce(stre.monthstore_sales,0))+ (coalesce(ecom.monthecom_sales, 0)))                                                           as month_sales,
 sum((coalesce(stre.monthstore_trans,0))+ (coalesce(ecom.monthecom_trans, 0)))                                                           as month_trans,
+sum((coalesce(stre.monthstore_units,0))+ (coalesce(ecom.monthecom_units, 0)))                                                           as month_units,
 monthstore_gm                                                                                                                           as month_store_gm,
 monthstore_sales                                                                                                                        as month_store_sales                                                                                  
 from (select
@@ -84,7 +54,7 @@ from (select
           count(distinct dtl.pos_trans_key)                   as monthstore_trans,
           sum(dtl.extended_sls_amt)                           as monthstore_sales,
           sum(dtl.grs_mrgn_amt)                               as monthstore_gm,
-          sum(dtl.qty)                                        as monthstoreunits
+          sum(dtl.qty)                                        as monthstore_units
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
@@ -98,37 +68,6 @@ from (select
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
         where tm.day_idnt between  &start_wk_idnt and &end_wk_idnt
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
-group by stre.indiv_id, ecom.indiv_id;
-
---LY
-create table monthshoppers_LY_&mth as
-select 
-(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id 
-  else coalesce(stre.indiv_id, ecom.indiv_id) end)                                                                                      as indiv_id,
-sum((coalesce(stre.monthstore_sales,0))+ (coalesce(ecom.monthecom_sales, 0)))                                                           as month_sales,
-sum((coalesce(stre.monthstore_trans,0))+ (coalesce(ecom.monthecom_trans, 0)))                                                           as month_trans,
-monthstore_gm                                                                                                                           as month_store_gm,
-monthstore_sales                                                                                                                        as month_store_sales                                                                                  
-from (select
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                   as monthstore_trans,
-          sum(dtl.extended_sls_amt)                           as monthstore_sales,
-          sum(dtl.grs_mrgn_amt)                               as monthstore_gm,
-          sum(dtl.qty)                                        as monthstoreunits
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between (&start_wk_idnt - 100) and (&end_wk_idnt - 100) and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-        group by dtl.indiv_id) stre
-    full outer join(
-    select
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                       as monthecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                         as monthecom_sales,
-        sum(ecom.flfll_unit_cnt)                            as monthecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.day_idnt between (&start_wk_idnt - 100) and (&end_wk_idnt - 100)
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
@@ -157,33 +96,8 @@ from (select
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
---LY
-create table last_shop_excl_LY_&mth
-select
-(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id,
-(case when lastshop_store > lastshop_ecom then lastshop_store when lastshop_store < lastshop_ecom then lastshop_ecom end)                       as lastshop,
-(case when firstshop_store < firstshop_ecom then firstshop_store when firstshop_store > firstshop_ecom then firstshop_ecom end)                 as firstshop
-from (select
-          dtl.indiv_id,
-          max(dtl.day_idnt)                                       as lastshop_store,
-          min(dtl.day_idnt)                                       as firstshop_ecom
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt < &start_wk_idnt -100          and dtl.trans_typ_key in(19,22,33)           and str.distt_idnt != '999'
-        group by str.indiv_id) stre
-    full outer join(
-      select
-        ecom.indiv_id,
-        max(tm.day_idnt)                                          as lastshop_ecom,
-        min(tm.day_idnt)                                          as firstshop_ecom
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.wk_idnt < &start_wk_idnt -100
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
-group by stre.indiv_id, ecom.indiv_id;
-
 --new and reactivated customers
-create table new_react_cust&mth as
+create table new_cust_&mth as
 select
 distinct (indiv_id),
 case when indiv_id not in (select distinct indiv_id from last_shop_excl_&mth) then 'new'
@@ -203,95 +117,213 @@ create table react_cust_&mth as
     select distinct indiv_id
     from react_cust_&mth;
 
---LY 
-create table new_cust_LY_&mth as
-select distinct indiv_id
-from monthshoppers_&mth
-where indiv_id not in (select distinct indiv_id from last_shop_excl_LY_&mth);
- 
-create table react_cust_LY_&mth as
-    select distinct indiv_id
-    from rolling12trans_LY_&mth
-    where indiv_id in
-    (select distinct indiv_id from last_shop_excl_LY_&mth where last_shop <= (&end_day_idnt - 1000));
-
- create table new_react_cust_LY_&mth as
-    select distinct indiv_id
-    from new_cust_LY_&mth
-    union
-    select distinct indiv_id
-    from react_cust_LY_&mth;
 
 --define customer groups
-create table cust_groups_&mth as
+create table cust_groups_monthly&mth as
     select
-       case when b.indiv_id is not null then 'new'
-            when a.rolling12trans >= 6  then 'top'
-            when a.rolling12trans >= 3  then 'middle'
-            when a.rolling12trans >= 1  then 'bottom'
-                                        else 'z.error'
-       end custgroup
-
-      ,a.indiv_id
-      ,a.lastshop
-      ,a.rolling12sales
+       case when b.indiv_id is not null         then 'new'
+            when a.rolling12trans >= 6          then 'top'
+            when a.rolling12trans >= 3          then 'middle'
+            when a.rolling12trans >= 1          then 'bottom'
+                                                else 'z.error'
+       end                                                as custgroup_month,
+       b.new_react                                        as new_react_split,
+       a.indiv_id
     from        rolling12trans_&mth a
-      left join new_react_cust_&mth b on a.indiv_id = b.indiv_id
-      left join new_cust_&mth c on a.indiv_id = c.indiv_id;
+      left join new_react_cust&mth b on a.indiv_id = b.indiv_id;
 
-create table cust_groups_LY_&mth as
-    select
-       case when b.indiv_id is not null then 'new'
-            when a.rolling12trans >= 6  then 'top'
-            when a.rolling12trans >= 3  then 'middle'
-            when a.rolling12trans >= 1  then 'bottom'
-                                        else 'z.error'
-       end custgroup
-      ,a.indiv_id
-      ,a.lastshop
-      ,a.rolling12sales
-    from        rolling12trans_LY_&mth a
-      left join new_react_cust__LY&mth b on a.indiv_id = b.indiv_id;
+/*
+use the below definitions and rerun code above
+                                                 ^
+                                                 |
+                                                 |
+                                                 |
+*/
+  -----Last year metrics-----
+DEFINE start_day_idnt = '2016302';
+DEFINE end_day_idnt = '2016336';
+DEFINE start_wk_idnt = '201644';
+DEFINE end_wk_idnt = '201648';
+DEFINE end_dt = '28dec2016';
+DEFINE mth = '_LY_DEC';
 
-drop table rolling12trans_&mth purge;
-drop table new_cust_&mth purge;
-drop table last_shop_excl_mth_&mth purge;
-drop table react_cust_&mth purge;
-drop table new_react_cust_&mth purge;
+--for customers groups 
+DEFINE mth = 'DEC';
+
+create table custgroups_yearly&mth as
+select 
+indiv_id,
+       case when ly.indiv_id is null or  (ly.firstshop - 1000) > ly.lastshop                      then 'new_react'
+            when a.rolling12trans >= 6                                                            then 'top'
+            when a.rolling12trans >= 3                                                            then 'middle'
+            when a.rolling12trans >= 1                                                            then 'bottom'
+                                                                                                  else 'z.error'
+       end                                                as custgroup_yearly,
+from last_shop_excl_&mth TY
+left join last_shop_excl_LY_&mth LY on ty.indiv_id = ly.indiv_id
 
 
-
-create table all_indivs_sls as
+--define TY customer groups
+create table cust_groups_&mth as
 select a.indiv_id,
-(case when b.trans_ty_&mth is null then 0 else b.trans_ty_&mth end) as trans_ty_&mth,
-(case when b.sales_ty_&mth is null then 0 else b.sales_ty_&mth end) as sales_ty_&mth,
-(case when b.units_ty_&mth is null then 0 else b.units_ty_&mth end) as units_ty_&mth,
-(case when b.gm_rt_store_ty_&mth is null then 0 else b.gm_rt_store_ty_&mth end) as gm_rt_store_ty_&mth,
-(case when c.trans_ty is null then 0 else c.trans_ty end) as trans_ty_12mth,
-(case when c.sales_ty is null then 0 else c.sales_ty end) as sales_ty_12mth,
-(case when c.units_ty is null then 0 else c.units_ty end) as units_ty_12mth,
-(case when c.gm_rt_store_ty is null then 0 else c.gm_rt_store_ty end) as gm_rt_store_ty_12mth,
-(case when d.trans_ly_&mth is null then 0 else d.trans_ly_&mth end) as trans_ly_&mth,
-(case when d.sales_ly_&mth is null then 0 else d.sales_ly_&mth end) as sales_ly_&mth,
-(case when d.units_ly_&mth is null then 0 else d.units_ly_&mth end) as units_ly_&mth,
-(case when d.gm_rt_store_ly_&mth is null then 0 else d.gm_rt_store_ly_&mth end) as gm_rt_store_ly_&mth,
-(case when e.trans_ly is null then 0 else e.trans_ly end) as trans_ly_12mth,
-(case when e.sales_ly is null then 0 else e.sales_ly end) as sales_ly_12mth,
-(case when e.units_ly is null then 0 else e.units_ly end) as units_ly_12mth,
-(case when e.gm_rt_store_ly is null then 0 else e.gm_rt_store_ly end) as gm_rt_store_ly_12mth
-from all_indivs_24mo_&mth a
-left join ty_mo_sls_&mth b on a.indiv_id = b.indiv_id
-left join ty_12mo_sls_&mth c on a.indiv_id = c.indiv_id
-left join ly_mo_sls_&mth d on a.indiv_id = d.indiv_id
-left join ly_12mo_sls_&mth e on a.indiv_id = e.indiv_id;
+a.rolling12trans,
+a.rolling12sales,
+(case when b.indiv_id is null then 'New/React'
+when a.rolling12trans > 0 and a.rolling12trans <= 2 then 'Bottom'
+when a.rolling12trans > 2 and a.rolling12trans <= 5 then 'Middle'
+else 'Top' end) as custgroup
+from rolling12trans_&mth a
+left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
 
-drop table ty_mo_sls_&mth purge;
-drop table ty_12mo_sls_&mth purge;
-drop table ly_mo_sls_&mth purge;
-drop table ly_12mo_sls_&mth purge;
+-----customer attrtibutes-----
+DEFINE start_day_idnt = '2017302';
+DEFINE end_day_idnt = '2017336';
+DEFINE start_wk_idnt = '201744';
+DEFINE end_wk_idnt = '201748';
+DEFINE end_dt = '30dec2017';
+DEFINE mth = 'DEC';
 
+/*Email metrics*/
+--emailed 
+create table em_&mth as
+select distinct rf.indiv_id                               as indiv_id,
+'emailed'                                                 as emailed
+from monthshoppers_&mth mth
+inner join ua_email_contact_history em on mth.indiv_id = em.indiv_id
+inner join ua_email_ref rf on em.email_id = rf.email_id     
+where em.wk_idnt between (&end_wk_idnt-100 + 1) and &end_wk_idnt
+and em.control_cd = 0;
 
+--email open 
+create table em_open_&mth as
+select distinct rf.indiv_id                                 as indiv_id,
+'open'                                                      as opens
+from monthshoppers_&mth mth
+inner join ua_email_resolution res on mth.indiv_id = res.indiv_id
+inner join ua_email_ref rf on res.email_id = rf.email_id        
+where res.wk_idnt between (&end_wk_idnt-100 + 1) and &end_wk_idnt
+and res.opened_dt is not null;
 
+/*DM metrics*/
+create table dm_&mth as
+select distinct b.indiv_id,
+'direct mailed' as direct_mail
+from ua_direct_mail_contact_history a
+inner join ua_individual            b on a.addr_id           = b.addr_id
+inner join ua_campaign              c on a.campaign_id       = c.campaign_id
+inner join ua_pos_tm_day            d on to_date(c.start_dt) = to_date(d.day_dt)
+inner join ua_pos_tm_day            e on to_date(c.end_dt)   = to_date(e.day_dt)
+where d.wk_idnt <= &end_wk_idnt and e.wk_idnt >= (&end_wk_idnt -100)
+and a.control_cd = 0;
 
-------DROP TABLES------
-drop table all_indivs_24mo_&mth purge;
+/*MVS/LVS*/
+--MVS customers with 50% discount
+create table mvs_discount_&mth as 
+select distinct indiv_id                                                         
+from UA_POS_TRANS_DTL                                                         
+where UA_POS_TRANS_DTL.DISC_PCT >=50                                                      
+and WK_IDNT between (&end_wk_idnt-100 +1) and &end_wk_idnt;  
+    
+--MVS customers using heavy coupons                                                         
+create table mvs_coupon_&mth as 
+select distinct indiv_id 
+from UA_POS_COUPON_DTL 
+where CPN_UPC_DESC IN ( 'CPN 30% ENTIRE', 'CPN 50% ERPP  D01', '1CPN 50% AORPI','1CPN 50% D01', 'CPN 25% ENTIRE DEPT 45', 'CPN 60% OFF AORPI', 'CPN 40% ENTIRE', '1CPN 55% AORPI', '1CPN 40% ENTIRE','CPN 50% AORPI  DEPT 45', '1CPN 60% AORPI', '1CPN 30% ENTIRE', '1CPN 25% ENTIRE - ND', '1CPN 30% ENTIRE - ND', 'CPN 50% AORPI', 'CPN 50% D01', '30% ENTIRE (ENTIRE, INCLUDING', '1CPN 40% ERPP', '1CPN 50% AORPI DEPT 45', 'CPN 55% AORPI', '1CPN 60% ERPP', '1CPN 60% OFF AORPI') 
+and WK_IDNT between (&end_wk_idnt-100 +1) and &end_wk_idnt;         
+
+--lifetime discount amount dimension  
+create table mvs_disc_amt_&mth as
+select indiv_id,
+sum(extended_sls_amt) as sales,
+(sum(disc_amt) * -1) as disc_amt
+from ua_pos_trans_dtl
+where wk_idnt<=&end_wk_idnt
+group by indiv_id;
+ 
+create table allcust_avg_disc_&mth as
+select indiv_id,
+sales,
+disc_amt,
+(sales+disc_amt) as total_sale
+from mvs_disc_amt_&mthty;
+
+create table allcust_disc_pct_&mth as
+select indiv_id,
+(disc_amt/total_sale) as disc_pct_ttl
+from allcust_avg_disc_&mth
+where total_sale != 0;
+
+create table mvs_all_&mth as
+select distinct indiv_id
+from (select distinct indiv_id from mvs_discount_&mth)
+union (select distinct indiv_id from mvs_coupon_&mth)
+union (select distinct indiv_id from allcust_disc_pct_&mth where disc_pct_ttl >= 0.3);
+
+--classify all customers in dataset to MVS or LVS
+create table value_segment_&mth as
+select distinct a.indiv_id
+,(case when b.indiv_id is not null then 'MVS' else 'LVS' end) as value_segment
+from rolling12trans_&mth a
+left join mvs_all_&mth b on a.indiv_id = b.indiv_id;
+
+/*Combine all metrics*/
+create table groups_&mth as
+select a.indiv_id,
+a.custgroup,
+(case when c.indiv_id is null then 'N' else 'Y' end) as emailed,
+(case when d.indiv_id is null then 'N' else 'Y' end) as email_open,
+(case when e.indiv_id is null then 'N' else 'Y' end) as dm,
+b.sales,
+b.trxn,
+f.channel,
+g.value_segment
+from cust_groups_&mth   a
+inner join TY_metrics_&mth     b on a.indiv_id = b.indiv_id
+left join em_&mth      c on a.indiv_id = c.indiv_id
+left join em_open_&mth d on a.indiv_id = d.indiv_id
+left join dm_&mth      e on a.indiv_id = e.indiv_id
+left join channel_&mth f on a.indiv_id = f.indiv_id
+left join value_segment_&mth g on a.indiv_id = g.indiv_id;
+
+--use this definitions and then rerun all of the code above
+  -----Last year metrics-----
+DEFINE start_day_idnt = '2016302';
+DEFINE end_day_idnt = '2016336';
+DEFINE start_wk_idnt = '201644';
+DEFINE end_wk_idnt = '201648';
+DEFINE end_dt = '28dec2016';
+DEFINE mth = '_LY_DEC';
+
+-----to drop tables-----
+DEFINE start_day_idnt = '2017302';
+DEFINE end_day_idnt = '2017336';
+DEFINE start_wk_idnt = '201744';
+DEFINE end_wk_idnt = '201748';
+DEFINE end_dt = '30dec2017';
+DEFINE mth = 'DEC';
+
+DEFINE start_day_idnt = '2016302';
+DEFINE end_day_idnt = '2016336';
+DEFINE start_wk_idnt = '201644';
+DEFINE end_wk_idnt = '201648';
+DEFINE end_dt = '28dec2016';
+DEFINE mth = '_LY_DEC';
+
+Drop table rolling12trans_&mth;
+Drop table monthshoppers_&mth;
+Drop table last_shop_excl_&mth;
+Drop table new_cust_&mth;
+Drop table react_cust_&mth;
+Drop table new_react_cust_&mth;
+Drop table custgroups_yearly&mth;
+Drop table em_&mth;
+Drop table em_open_&mth;
+Drop table dm_&mth;
+Drop table mvs_discount_&mth;
+Drop table mvs_coupon_&mth;
+Drop table mvs_disc_amt_&mth;
+Drop table allcust_avg_disc_&mth;
+Drop table allcust_disc_pct_&mth;
+Drop table mvs_all_&mth;
+Drop table value_segment_&mth;
+Drop table groups_&mth;
