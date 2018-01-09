@@ -1,0 +1,386 @@
+
+-----Start ROCK code-----
+DEFINE start_day_idnt = '2017302';
+DEFINE end_day_idnt = '2017336';
+DEFINE start_wk_idnt = '201744';
+DEFINE end_wk_idnt = '201748';
+DEFINE end_dt = '30dec2017';
+DEFINE mth = 'DEC';
+
+--rolling12 
+create table rolling12trans_&mth as
+select
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id,
+sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0)))                                                           as total_sales,
+sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0)))                                                           as total_trans,
+sum((coalesce(stre.rolling12store_units,0))+ (coalesce(ecom.rolling12ecom_units, 0)))                                                           as total_units,
+sum(stre.rolling12store_gm)                                                                                                                     as gm_store,
+sum(stre.rolling12store_sales)                                                                                                                  as sales_store,
+(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as rolling12store_trans,
+          sum(dtl.extended_sls_amt)                               as rolling12store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as rolling12store_gm,
+          sum(dtl.qty)                                            as rolling12store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between ( &end_wk_idnt - 100 + 1) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as rolling12ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as rolling12ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as rolling12ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.day_idnt between  (&end_day_idnt - 1000 + 1) and &end_day_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--month sales TY
+create table monthshoppers_&mth as
+select 
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id 
+  else coalesce(stre.indiv_id, ecom.indiv_id) end)                                                                                      as indiv_id,
+sum((coalesce(stre.monthstore_sales,0))+ (coalesce(ecom.monthecom_sales, 0)))                                                           as month_sales,
+sum((coalesce(stre.monthstore_trans,0))+ (coalesce(ecom.monthecom_trans, 0)))                                                           as month_trans,
+sum((coalesce(stre.monthstore_units,0))+ (coalesce(ecom.monthecom_units, 0)))                                                           as month_units,
+sum(monthstore_gm )                                                                                                                     as month_store_gm,
+sum(monthstore_sales )                                                                                                                  as month_store_sales                                                                                  
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                   as monthstore_trans,
+          sum(dtl.extended_sls_amt)                           as monthstore_sales,
+          sum(dtl.grs_mrgn_amt)                               as monthstore_gm,
+          sum(dtl.qty)                                        as monthstore_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                       as monthecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                         as monthecom_sales,
+        sum(ecom.flfll_unit_cnt)                            as monthecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between  &start_wk_idnt and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--last and first shop 
+create table last_shop_excl_&mth as
+select
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id,
+(case when stre.lastshop_store > ecom.lastshop_ecom then stre.lastshop_store when stre.lastshop_store < ecom.lastshop_ecom then ecom.lastshop_ecom end)                       as lastshop,
+(case when stre.firstshop_store < ecom.firstshop_ecom then stre.firstshop_store when stre.firstshop_store > ecom.firstshop_ecom then ecom.firstshop_ecom end)                 as firstshop
+from (select
+          dtl.indiv_id,
+          max(dtl.day_idnt)                                       as lastshop_store,
+          min(dtl.day_idnt)                                       as firstshop_store
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt < &start_wk_idnt          and dtl.trans_typ_key in(19,22,33)           and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+      select
+        ecom.indiv_id,
+        max(tm.day_idnt)                                          as lastshop_ecom,
+        min(tm.day_idnt)                                          as firstshop_ecom
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt < &start_wk_idnt 
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--new and reactivated customers
+create table new_cust_&mth as
+  select		  
+  distinct (indiv_id)	  
+from monthshoppers_&mth
+  where indiv_id not in (select distinct indiv_id from last_shop_excl_&mth);
+  
+  create table react_cust_&mth as
+    select distinct(indiv_id)
+    from monthshoppers_&mth
+    where indiv_id in   (select distinct indiv_id from last_shop_excl_&mth where lastshop <= (&end_day_idnt - 1000));
+
+ create table new_react_cust_&mth as
+    select distinct indiv_id
+    from new_cust_&mth
+    union
+    select distinct indiv_id
+    from react_cust_&mth;
+
+--define customer groups
+create table cust_groups_monthly_&mth as
+    select
+       case when b.indiv_id is not null      then 'new'
+            when a.total_trans >= 6          then 'top'
+            when a.total_trans >= 3          then 'middle'
+            when a.total_trans >= 1          then 'bottom'
+                                                else 'z.error'
+       end                                                as custgroup_month,
+       a.indiv_id
+    from        rolling12trans_&mth a
+      left join new_react_cust_&mth b on a.indiv_id = b.indiv_id;
+
+/*
+use the below definitions and rerun code above
+                                                 ^
+                                                 |
+                                                 |
+                                                 |
+*/
+  -----Last year metrics-----
+DEFINE start_day_idnt = '2016302';
+DEFINE end_day_idnt = '2016336';
+DEFINE start_wk_idnt = '201644';
+DEFINE end_wk_idnt = '201648';
+DEFINE end_dt = '28dec2016';
+DEFINE mth = 'LY_DEC';
+
+--for last_shop_excl_&mth only
+DEFINE start_day_idnt = '2015302';
+DEFINE end_day_idnt = '2015336';
+DEFINE start_wk_idnt = '201544';
+DEFINE end_wk_idnt = '201548';
+DEFINE end_dt = '02jan2016';
+DEFINE mth = '15_DEC';
+
+--for customers groups 
+--DEFINE mth = 'DEC';
+--create table custgroups_yearly_&mth as
+--select 
+--(case when ty.indiv_id= ly.indiv_id then ty.indiv_id else coalesce(ty.indiv_id, ly.indiv_id) end)    as indiv_id,
+--       case when ly.indiv_id is null or  (ty.firstshop - 1000) > ly.lastshop                      then 'new_react'
+--            when rolling12.total_trans >= 6                                                       then 'top'
+--           when rolling12.total_trans >= 3                                                       then 'middle'
+--            when rolling12.total_trans >= 1                                                       then 'bottom'
+ --                                                                                                 else 'z.error'
+--       end                                                as custgroup_yearly
+--from last_shop_excl_&mth TY
+--left join last_shop_excl_LY_&mth LY on ty.indiv_id = ly.indiv_id
+--left join rolling12trans_&mth rolling12 on ty.indiv_id = rolling12.indiv_id
+
+
+-----customer attrtibutes-----
+DEFINE start_day_idnt = '2017302';
+DEFINE end_day_idnt = '2017336';
+DEFINE start_wk_idnt = '201744';
+DEFINE end_wk_idnt = '201748';
+DEFINE end_dt = '30dec2017';
+DEFINE mth = 'DEC';
+
+/*Email metrics*/
+--emailed 
+create table em_&mth as
+select distinct rf.indiv_id                               as indiv_id,
+'emailed'                                                 as emailed
+from monthshoppers_&mth mth
+inner join ua_email_contact_history em on mth.indiv_id = em.indiv_id
+inner join ua_email_ref rf on em.email_id = rf.email_id     
+where em.wk_idnt between (&end_wk_idnt-100 + 1) and &end_wk_idnt
+and em.control_cd = 0;
+
+--email open 
+create table em_open_&mth as
+select distinct rf.indiv_id                                 as indiv_id,
+'open'                                                      as opens
+from monthshoppers_&mth mth
+inner join ua_email_resolution res on mth.indiv_id = res.indiv_id
+inner join ua_email_ref rf on res.email_id = rf.email_id        
+where res.wk_idnt between (&end_wk_idnt-100 + 1) and &end_wk_idnt
+and res.opened_dt is not null;
+
+/*DM metrics*/
+create table dm_&mth as
+select distinct b.indiv_id,
+'direct mailed' as direct_mail
+from ua_direct_mail_contact_history a
+inner join ua_individual            b on a.addr_id           = b.addr_id
+inner join ua_campaign              c on a.campaign_id       = c.campaign_id
+inner join ua_pos_tm_day            d on to_date(c.start_dt) = to_date(d.day_dt)
+inner join ua_pos_tm_day            e on to_date(c.end_dt)   = to_date(e.day_dt)
+where d.wk_idnt <= &end_wk_idnt and e.wk_idnt >= (&end_wk_idnt -100)
+and a.control_cd = 0;
+
+/*MVS/LVS*/
+--MVS customers with 50% discount
+create table mvs_discount_&mth as 
+select distinct indiv_id                                                         
+from UA_POS_TRANS_DTL                                                         
+where UA_POS_TRANS_DTL.DISC_PCT >=50                                                      
+and WK_IDNT between (&end_wk_idnt-100 +1) and &end_wk_idnt;  
+    
+--MVS customers using heavy coupons                                                         
+create table mvs_coupon_&mth as 
+select distinct indiv_id 
+from UA_POS_COUPON_DTL 
+where CPN_UPC_DESC IN ( 'CPN 30% ENTIRE', 'CPN 50% ERPP  D01', '1CPN 50% AORPI','1CPN 50% D01', 'CPN 25% ENTIRE DEPT 45', 'CPN 60% OFF AORPI', 'CPN 40% ENTIRE', '1CPN 55% AORPI', '1CPN 40% ENTIRE','CPN 50% AORPI  DEPT 45', '1CPN 60% AORPI', '1CPN 30% ENTIRE', '1CPN 25% ENTIRE - ND', '1CPN 30% ENTIRE - ND', 'CPN 50% AORPI', 'CPN 50% D01', '30% ENTIRE (ENTIRE, INCLUDING', '1CPN 40% ERPP', '1CPN 50% AORPI DEPT 45', 'CPN 55% AORPI', '1CPN 60% ERPP', '1CPN 60% OFF AORPI') 
+and WK_IDNT between (&end_wk_idnt-100 +1) and &end_wk_idnt;         
+
+--lifetime discount amount dimension  
+create table mvs_disc_amt_&mth as
+select indiv_id,
+sum(extended_sls_amt) as sales,
+(sum(disc_amt) * -1) as disc_amt
+from ua_pos_trans_dtl
+where wk_idnt<=&end_wk_idnt
+group by indiv_id;
+ 
+create table allcust_avg_disc_&mth as
+select indiv_id,
+sales,
+disc_amt,
+(sales+disc_amt) as total_sale
+from mvs_disc_amt_&mth;
+
+create table allcust_disc_pct_&mth as
+select indiv_id,
+(disc_amt/total_sale) as disc_pct_ttl
+from allcust_avg_disc_&mth
+where total_sale != 0;
+
+create table mvs_all_&mth as
+select distinct indiv_id
+from (select distinct indiv_id from mvs_discount_&mth)
+union (select distinct indiv_id from mvs_coupon_&mth)
+union (select distinct indiv_id from allcust_disc_pct_&mth where disc_pct_ttl >= 0.3);
+
+--classify all customers in dataset to MVS or LVS
+create table value_segment_&mth as
+select distinct a.indiv_id
+,(case when b.indiv_id is not null then 'MVS' else 'LVS' end) as value_segment
+from rolling12trans_&mth a
+left join mvs_all_&mth b on a.indiv_id = b.indiv_id;
+
+/*Combine all metrics*/
+create table groups_&mth as
+select a.indiv_id,
+a.custgroup,
+(case when c.indiv_id is null then 'N' else 'Y' end) as emailed,
+(case when d.indiv_id is null then 'N' else 'Y' end) as email_open,
+(case when e.indiv_id is null then 'N' else 'Y' end) as dm,
+b.sales,
+b.trxn,
+f.channel,
+g.value_segment
+from cust_groups_&mth   a
+inner join TY_metrics_&mth     b on a.indiv_id = b.indiv_id
+left join em_&mth      c on a.indiv_id = c.indiv_id
+left join em_open_&mth d on a.indiv_id = d.indiv_id
+left join dm_&mth      e on a.indiv_id = e.indiv_id
+left join channel_&mth f on a.indiv_id = f.indiv_id
+left join value_segment_&mth g on a.indiv_id = g.indiv_id;
+
+--define LY customer groups
+DEFINE mthlly = 'dec15';
+
+--LLY customers - Identify customers with prior 12month sales (prior Nov 2015)
+create table cust_&mthlly as
+select distinct a.indiv_id
+from ua_pos_trans_dtl a
+where a.day_idnt between (&end_day_idnt - 300 + 1) and (&end_day_idnt - 200)
+and a.trans_typ_key in (19,22,33);
+
+create table custgroup_yearly_LY_&mth as
+select a.indiv_id,
+a.total_trans,
+a.total_sales,
+(case when b.indiv_id is null then 'New/React'
+when a.total_trans > 0 and a.total_trans <= 2 then 'Bottom'
+when a.total_trans > 2 and a.total_trans <= 5 then 'Middle'
+else 'Top' end) as custgroup
+from rolling12trans_LY_&mth a
+left join cust_&mthlly b on a.indiv_id=b.indiv_id;
+
+--use this definitions and then rerun all of the code above
+  -----Last year metrics-----
+DEFINE start_day_idnt = '2016302';
+DEFINE end_day_idnt = '2016336';
+DEFINE start_wk_idnt = '201644';
+DEFINE end_wk_idnt = '201648';
+DEFINE end_dt = '28dec2016';
+DEFINE mth = '_LY_DEC';
+
+create table month_end_cust_&mth as
+select 
+all.indiv_id                                    as indiv_id,
+mth.total_sales                                 as sales_12mth,
+mth.total_trans                                 as trans_12mth,
+mth.total_units                                 as units_12mth,
+mth.gm_store                                    as gm_store_12mth,
+mth.sales_store                                 as sales_store_12mth,
+mth.channel                                     as channel_12mth,
+cust.custgroup_month                            as monthly_customer_group,
+mthly.total_sales                               as ly_sales_12mth,
+mthly.total_trans                               as ly_trans_12mth,
+mthly.total_units                               as ly_units_12mth,
+mthly.gm_store                                  as ly_gm_store_12mth,
+mthly.sales_store                               as ly_sales_store_12mth,
+mthly.channel                                   as ly_channel_12mth,
+custLY.custgroup_month                          as monthly_customer_group_LY,
+email.emailed                                   as emailed_12mth,
+em_open.opens                                   as email_opens_12mth,
+dm_LY.direct_mail                               as direct_mail_12mth,
+email_LY.emailed                                as emailed_12mth_LY,
+em_open_LY.opens                                as email_opens_12mth_LY,
+dm_LY.direct_mail                               as direct_mail_12mth_LY,
+mvs_lvs.value_segment                           as mvs_lvs,
+mvs_lvs_LY.value_segment                        as mvs_lvs_LY,
+custyear.custgroup_yearly                       as yearly_customer_group
+from all_indivs_24mo_DEC all
+left join rolling12trans_DEC                mth                   on all.indiv_id = mth.indiv_id
+left join rolling12trans_LY_DEC     		mthly                 on all.indiv_id = mthly.indiv_id
+left join cust_groups_monthly_DEC         	cust                  on all.indiv_id = cust.indiv_id
+left join cust_groups_monthly_LY_DEC      	custLY                on all.indiv_id = custLY.indiv_id
+left join custgroups_yearly_DEC             custyear              on all.indiv_id = custyear.indiv_id
+left join em_DEC                          	email                 on all.indiv_id = email.indiv_id
+left join em_open_DEC                     	em_open               on all.indiv_id = em_open.indiv_id
+left join dm_DEC                          	dm                    on all.indiv_id = dm.indiv_id
+left join em_LY_DEC                       	email_LY              on all.indiv_id = email_LY.indiv_id
+left join em_open_LY_DEC                  	em_open_LY            on all.indiv_id = em_open_LY.indiv_id
+left join dm_LY_DEC                       	dm_LY                 on all.indiv_id = dm_LY.indiv_id
+left join value_segment_DEC               	mvs_lvs               on all.indiv_id = mvs_lvs.indiv_id
+left join value_segment_LY_DEC            	mvs_lvs_LY            on all.indiv_id = mvs_lvs_LY.indiv_id;
+
+
+create table month_end_cust_attr_&mth as
+select 
+overall.indiv_id                                as indiv_id,
+email.emailed                                   as emailed_12mth,
+em_open.opens                                   as email_opens_12mth,
+dm.direct_mail                                  as direct_mail_12mth,
+email_LY.emailed                                as emailed_12mth_LY,
+em_open_LY.opens                                as email_opens_12mth_LY,
+dm_LY.direct_mail                               as direct_mail_12mth_LY,
+mvs_lvs.value_segment                           as mvs_lvs,
+mvs_lvs_LY.value_segment                        as mvs_lvs_LY
+from all_indivs_24mo_DEC overall
+left join em_DEC                          	email                 on overall.indiv_id = email.indiv_id
+left join em_open_DEC                     	em_open               on overall.indiv_id = em_open.indiv_id
+left join dm_DEC                          	dm                    on overall.indiv_id = dm.indiv_id
+left join em_LY_DEC                       	email_LY              on overall.indiv_id = email_LY.indiv_id
+left join em_open_LY_DEC                  	em_open_LY            on overall.indiv_id = em_open_LY.indiv_id
+left join dm_LY_DEC                       	dm_LY                 on overall.indiv_id = dm_LY.indiv_id
+left join value_segment_DEC               	mvs_lvs               on overall.indiv_id = mvs_lvs.indiv_id
+left join value_segment_LY_DEC            	mvs_lvs_LY            on overall.indiv_id = mvs_lvs_LY.indiv_id;
+
+--define TY customer groups
+create table custgroup_yearly_&mth as
+select a.indiv_id,
+a.total_trans,
+a.total_sales,
+(case when b.indiv_id is null then 'New/React'
+when a.total_trans > 0 and a.total_trans <= 2 then 'Bottom'
+when a.total_trans > 2 and a.total_trans <= 5 then 'Middle'
+else 'Top' end) as custgroup
+from rolling12trans_&mth a
+left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
+
+
+grant select on * to public;
