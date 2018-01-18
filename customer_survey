@@ -1,0 +1,10 @@
+select 
+tm.day_dt, 
+count(*),
+surv.reason_for_visit, 
+str.loc_st_or_prvnc_desc
+from ua_cust_trans_survey surv
+inner join ua_store str on str.loc_key=surv.loc_idnt
+inner join ua_pos_tm_day tm on  surv.trans_dt=tm.day_dt
+where tm.fiscal_year between 2016 and 2017
+group by tm.day_dt, str.loc_st_or_prvnc_desc, surv.reason_for_visit
