@@ -1,0 +1,21 @@
+-----Start ROCK code-----
+DEFINE start_wk_idnt = '201744';
+DEFINE end_wk_idnt = '201748';
+
+select
+   count(distinct dtl.indiv_id)                              as customers,
+   count(distinct dtl.pos_trans_key)                         as transactions,
+   sum(dtl.extended_sls_amt)                                 as sales,
+   sum(dtl.qty)                                              as units,
+   round(sum(gm.grs_mrgn_amt)/sum(gm.extended_sls_amt), 2)   as gm_rate
+   from         ua_pos_trans_dtl dtl
+   inner join ua_store str on dtl.loc_key = str.loc_key
+   left join (select pos_trans_key,
+              extended_sls_amt, 
+              grs_mrgn_amt
+              from  ua_pos_trans_dtl
+              where unit_cost_amt >0
+              and wk_idnt between &start_wk_idnt and &end_wk_idnt) gm on dtl.pos_trans_key = gm.pos_trans_key
+   where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) 
+         --and str.distt_idnt != '999'
+         
