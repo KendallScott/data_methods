@@ -5,3 +5,19 @@ tm.day_idnt
 from ua_crmt_page_view web
 inner join ua_pos_tm_day tm on to_date(web.timestamp_1)= to_date(tm.day_dt)
 where tm.day_idnt between 2015001 and 2017364;
+
+create table web_viewers_to_shoppers as
+select distinct
+dtl.pos_trans_key,
+web.indiv_id,
+dtl.wk_idnt
+from web_viewers web
+inner join ia_pos_trans_dtl dtl on web.indiv_id=dtl.indiv_id
+where (web.day_idnt= dtl.day_idnt 
+            or web.day_idnt= dtl.day_idnt-1
+            or web.day_idnt= dtl.day_idnt-2
+            or web.day_idnt= dtl.day_idnt-3
+            or web.day_idnt= dtl.day_idnt-4
+            or web.day_idnt= dtl.day_idnt-5 )
+and dtl.day_idnt between 2015001 and 2017364;
+
