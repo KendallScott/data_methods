@@ -1,0 +1,7 @@
+create table web_viewers as
+select 
+distinct(web.indiv_id),
+tm.day_idnt
+from ua_crmt_page_view web
+inner join ua_pos_tm_day tm on to_date(web.timestamp_1)= to_date(tm.day_dt)
+where tm.day_idnt between 2015001 and 2017364;
