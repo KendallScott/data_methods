@@ -12,7 +12,7 @@ dtl.pos_trans_key,
 web.indiv_id,
 dtl.wk_idnt
 from web_viewers web
-inner join ia_pos_trans_dtl dtl on web.indiv_id=dtl.indiv_id
+inner join ua_pos_trans_dtl dtl on web.indiv_id=dtl.indiv_id
 where (web.day_idnt= dtl.day_idnt 
             or web.day_idnt= dtl.day_idnt-1
             or web.day_idnt= dtl.day_idnt-2
