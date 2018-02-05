@@ -1,10 +1,9 @@
 -------this year metrics-------
-DEFINE start_day_idnt = '2017183';
-DEFINE end_day_idnt = '2017273';
-DEFINE start_wk_idnt = '201727';
-DEFINE end_wk_idnt = '201739';
-DEFINE end_dt = '28oct2017';
-DEFINE mth = 'Q3';
+DEFINE start_day_idnt = '2017337';
+DEFINE end_day_idnt = '2017364';
+DEFINE start_wk_idnt = '201749';
+DEFINE end_wk_idnt = '201752';
+DEFINE mth = 'JAN';
 
 create table all_indivs_24mo_&mth as
 select distinct dtl.indiv_id
@@ -39,13 +38,14 @@ select
       count(distinct dtl.pos_trans_key)                                                                                                               as rolling12_trans,
       sum(dtl.extended_sls_amt)                                                                                                                       as rolling12_sales,
       sum(dtl.qty)                                                                                                                                    as rolling12_units,
-      max(gm.gm_rate )                                                                                                                                as gm_rate,
+      sum((gm.gm_rate * dtl.extended_sls_amt) )                                                                                                       as gm,
       omni.channel                                                                                                                                    as channel
 from ua_pos_trans_dtl dtl
 inner join omnichannel_&mth omni on dtl.indiv_id = omni.indiv_id
 left join gm_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between (&end_wk_idnt - 100 + 1)  and &end_wk_idnt 
 group by dtl.indiv_id, omni.channel;
+  
   
 --time frame metrics
 create table gm_timeframe_&mth as
@@ -57,20 +57,21 @@ select
       and extended_sls_amt > 0
       and grs_mrgn_amt > 0
       group by indiv_id; 
-      
+     
+     drop table timeframe_&mth         
 --time frame metrics
 create table timeframe_&mth as
 select
       distinct(dtl.indiv_id)                                                                                                                          as indiv_id,
-      count(distinct dtl.pos_trans_key)                                                                                                               as rolling12_trans,
-      sum(dtl.extended_sls_amt)                                                                                                                       as rolling12_sales,
-      sum(dtl.qty)                                                                                                                                    as rolling12_units,
-      max(gm.gm_rate)                                                                                                                                 as gm_rate
+      count(distinct dtl.pos_trans_key)                                                                                                               as timeframe_trans,
+      sum(dtl.extended_sls_amt)                                                                                                                       as timeframe_sales,
+      sum(dtl.qty)                                                                                                                                    as timeframe_units,
+      sum((gm.gm_rate * dtl.extended_sls_amt) )                                                                                                       as gm
 from ua_pos_trans_dtl dtl
 left join gm_timeframe_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between &start_wk_idnt   and &end_wk_idnt 
 group by dtl.indiv_id;
-      
+        
 --last and first shop 
 create table last_shop_excl_&mth as
   select indiv_id,
@@ -116,6 +117,7 @@ create table cust_groups_month_&mth as
       left join new_react_cust_&mth new_react             on rolling.indiv_id = new_react.indiv_id;
 
 
+
 /*
 use the below definitions and rerun code above
                                                  ^
@@ -124,19 +126,17 @@ use the below definitions and rerun code above
                                                  |
 */
 -------Last year metrics-------
-DEFINE start_day_idnt = '2016183';
-DEFINE end_day_idnt = '2016273';
-DEFINE start_wk_idnt = '201627';
-DEFINE end_wk_idnt = '201639';
-DEFINE end_dt = '29oct2016';
-DEFINE mth = 'LY_Q3';
-
+DEFINE start_day_idnt = '2016337';
+DEFINE end_day_idnt = '2016364';
+DEFINE start_wk_idnt = '201649';
+DEFINE end_wk_idnt = '201652';
+DEFINE mth = 'LY_JAN';
 
 /*Email metrics*/
 --emailed 
 create table em_&mth as
 select distinct rf.indiv_id                               as indiv_id,
-'emailed'                                                 as emailed,
+'emailed'                                                 as emailed
 from timeframe_&mth mth
 inner join ua_email_contact_history em on mth.indiv_id = em.indiv_id
 inner join ua_email_ref rf on em.email_id = rf.email_id     
@@ -215,24 +215,6 @@ select distinct a.indiv_id
 from rolling12trans_&mth a
 left join mvs_all_&mth b on a.indiv_id = b.indiv_id;
 
-/*Combine all metrics*/
-create table groups_&mth as
-select a.indiv_id,
-a.custgroup,
-(case when c.indiv_id is null then 'N' else 'Y' end) as emailed,
-(case when d.indiv_id is null then 'N' else 'Y' end) as email_open,
-(case when e.indiv_id is null then 'N' else 'Y' end) as dm,
-b.sales,
-b.trxn,
-f.channel,
-g.value_segment
-from cust_groups_&mth   a
-inner join TY_metrics_&mth     b on a.indiv_id = b.indiv_id
-left join em_&mth      c on a.indiv_id = c.indiv_id
-left join em_open_&mth d on a.indiv_id = d.indiv_id
-left join dm_&mth      e on a.indiv_id = e.indiv_id
-left join channel_&mth f on a.indiv_id = f.indiv_id
-left join value_segment_&mth g on a.indiv_id = g.indiv_id;
 
 --define LY customer groups
 DEFINE mthlly = 'dec15';
@@ -246,94 +228,94 @@ and a.trans_typ_key in (19,22,33);
 
 create table custgroup_yearly_LY_&mth as
 select a.indiv_id,
-a.total_trans,
-a.total_sales,
-(case when b.indiv_id is null then 'New/React'
-when a.total_trans > 0 and a.total_trans <= 2 then 'Bottom'
-when a.total_trans > 2 and a.total_trans <= 5 then 'Middle'
-else 'Top' end) as custgroup
+(case when b.indiv_id is null                                 then 'New/React'
+when a.rolling12_trans > 0 and a.rolling12_trans <= 2         then 'Bottom'
+when a.rolling12_trans > 2 and a.rolling12_trans <= 5         then 'Middle'
+when a.rolling12_trans > 5                                    then 'Top' end) as custgroup
 from rolling12trans_LY_&mth a
 left join cust_&mthlly b on a.indiv_id=b.indiv_id;
 
---use this definitions and then rerun all of the code above
-  -----Last year metrics-----
-DEFINE start_day_idnt = '2016302';
-DEFINE end_day_idnt = '2016336';
-DEFINE start_wk_idnt = '201644';
-DEFINE end_wk_idnt = '201648';
-DEFINE end_dt = '28dec2016';
-DEFINE mth = '_LY_DEC';
-
-create table month_end_cust_&mth as
-select 
-all.indiv_id                                        as indiv_id,
-mth.rolling12_sales                                 as sales_12mth,
-mth.rolling12_trans                                 as trans_12mth,
-mth.rolling12_units                                 as units_12mth,
-mth.gm_rate                                         as gm_rate_12mth,
-mth.channel                                         as channel_12mth,
-cust.custgroup_month                                as monthly_customer_group,
-mthly.total_sales                                   as ly_sales_12mth,
-mthly.total_trans                                   as ly_trans_12mth,
-mthly.total_units                                   as ly_units_12mth,
-mthly.gm_store                                      as ly_gm_store_12mth,
-mthly.sales_store                                   as ly_sales_store_12mth,
-mthly.channel                                       as ly_channel_12mth,
-custLY.custgroup_month                              as monthly_customer_group_LY,
-email.emailed                                       as emailed_12mth,
-em_open.opens                                       as email_opens_12mth,
-dm_LY.direct_mail                                   as direct_mail_12mth,
-email_LY.emailed                                    as emailed_12mth_LY,
-em_open_LY.opens                                    as email_opens_12mth_LY,
-dm_LY.direct_mail                                   as direct_mail_12mth_LY,
-mvs_lvs.value_segment                               as mvs_lvs,
-mvs_lvs_LY.value_segment                            as mvs_lvs_LY,
-custyear.custgroup_yearly                           as yearly_customer_group
-from all_indivs_24mo_&mth all
-left join rolling12trans_&mth                    mth                   on all.indiv_id = mth.indiv_id
-left join rolling12trans_LY_&mth                 mthly                 on all.indiv_id = mthly.indiv_id
-left join cust_groups_monthly_&mth               cust                  on all.indiv_id = cust.indiv_id
-left join cust_groups_monthly_LY_&mth            custLY                on all.indiv_id = custLY.indiv_id
-left join custgroups_yearly_&mth                 custyear              on all.indiv_id = custyear.indiv_id
-left join em_&mth                                email                 on all.indiv_id = email.indiv_id
-left join em_open_&mth                           em_open               on all.indiv_id = em_open.indiv_id
-left join dm_&mth                                dm                    on all.indiv_id = dm.indiv_id
-left join em_LY_&mth                             email_LY              on all.indiv_id = email_LY.indiv_id
-left join em_open_LY_&mth                        em_open_LY            on all.indiv_id = em_open_LY.indiv_id
-left join dm_LY_&mth                             dm_LY                 on all.indiv_id = dm_LY.indiv_id
-left join value_segment_&mth                     mvs_lvs               on all.indiv_id = mvs_lvs.indiv_id
-left join value_segment_LY_&mth                  mvs_lvs_LY            on all.indiv_id = mvs_lvs_LY.indiv_id;
-
-
-create table month_end_cust_attr_&mth as
-select 
-overall.indiv_id                                as indiv_id,
-email.emailed                                   as emailed_12mth,
-em_open.opens                                   as email_opens_12mth,
-dm.direct_mail                                  as direct_mail_12mth,
-email_LY.emailed                                as emailed_12mth_LY,
-em_open_LY.opens                                as email_opens_12mth_LY,
-dm_LY.direct_mail                               as direct_mail_12mth_LY,
-mvs_lvs.value_segment                           as mvs_lvs,
-mvs_lvs_LY.value_segment                        as mvs_lvs_LY
-from all_indivs_24mo_DEC overall
-left join em_DEC                                email                 on overall.indiv_id = email.indiv_id
-left join em_open_DEC                           em_open               on overall.indiv_id = em_open.indiv_id
-left join dm_DEC                                dm                    on overall.indiv_id = dm.indiv_id
-left join em_LY_DEC                             email_LY              on overall.indiv_id = email_LY.indiv_id
-left join em_open_LY_DEC                        em_open_LY            on overall.indiv_id = em_open_LY.indiv_id
-left join dm_LY_DEC                             dm_LY                 on overall.indiv_id = dm_LY.indiv_id
-left join value_segment_DEC                     mvs_lvs               on overall.indiv_id = mvs_lvs.indiv_id
-left join value_segment_LY_DEC                  mvs_lvs_LY            on overall.indiv_id = mvs_lvs_LY.indiv_id;
+select * from custgroup_yearly_LY_&mth where rownum <55
 
 --define TY customer groups
 create table custgroup_yearly_&mth as
 select a.indiv_id,
-a.total_trans,
-a.total_sales,
-(case when b.indiv_id is null then 'New/React'
-when a.total_trans > 0 and a.total_trans <= 2 then 'Bottom'
-when a.total_trans > 2 and a.total_trans <= 5 then 'Middle'
-else 'Top' end) as custgroup
+(case when b.indiv_id is null                                 then 'New/React'
+when a.rolling12_trans > 0 and a.rolling12_trans <= 2         then 'Bottom'
+when a.rolling12_trans > 2 and a.rolling12_trans <= 5         then 'Middle'
+when a.rolling12_trans > 5                                    then 'Top' end) as custgroup
 from rolling12trans_&mth a
 left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
+
+select * from rolling12trans_&mth where rownum <55
+drop table  month_cust_&mth 
+
+create table month_cust_&mth as
+select 
+coalesce(all_cust.indiv_id , cust_yearly.indiv_id, cust_yearly_LY.indiv_id)                   as indiv_id,
+tmframe.timeframe_trans                                                                       as month_trans,
+tmframe.timeframe_sales                                                                       as month_sales,
+tmframe.timeframe_units                                                                       as month_units,
+tmframe_LY.gm                                                                                 as month_gm,
+tmframe_LY.timeframe_trans                                                                    as ly_month_trans,
+tmframe_LY.timeframe_sales                                                                    as ly_month_sales,
+tmframe_LY.timeframe_units                                                                    as ly_month_units,
+tmframe_LY.gm                                                                                 as ly_month_gm,
+mth.rolling12_sales                                                                           as sales_12mth,
+mth.rolling12_trans                                                                           as trans_12mth,
+mth.rolling12_units                                                                           as units_12mth,
+mth.gm                                                                                        as gm_12mth,
+mth.channel                                                                                   as channel_12mth,
+cust.custgroup_month                                                                          as monthly_customer_group,
+custly.custgroup_month                                                                        as monthly_customer_group_ly,
+cust_yearly.custgroup                                                                         as yearly_customer_group,
+cust_yearly_LY.custgroup                                                                      as yearly_customer_group_LY,
+mthly.rolling12_sales                                                                         as ly_sales_12mth,
+mthly.rolling12_trans                                                                         as ly_trans_12mth,
+mthly.rolling12_units                                                                         as ly_units_12mth,
+mthly.gm                                                                                      as ly_gm_12mth,
+mthly.channel                                                                                 as ly_channel_12mth,
+email.emailed                                                                                 as emailed_12mth,
+em_open.opens                                                                                 as email_opens_12mth,
+dm_LY.direct_mail                                                                             as direct_mail_12mth,
+email_LY.emailed                                                                              as emailed_12mth_LY,
+em_open_LY.opens                                                                              as email_opens_12mth_LY,
+dm_LY.direct_mail                                                                             as direct_mail_12mth_LY,
+mvs_lvs.value_segment                                                                         as mvs_lvs,
+mvs_lvs_LY.value_segment                                                                      as mvs_lvs_LY
+from all_indivs_24mo_&mth                         all_cust 
+left join rolling12trans_&mth                     mth                   on all_cust.indiv_id = mth.indiv_id
+left join rolling12trans_LY_&mth                  mthly                 on all_cust.indiv_id = mthly.indiv_id
+left join cust_groups_month_&mth                  cust                  on all_cust.indiv_id = cust.indiv_id
+left join cust_groups_month_LY_&mth               custLY                on all_cust.indiv_id = custLY.indiv_id
+left join timeframe_&mth                          tmframe               on all_cust.indiv_id = tmframe.indiv_id
+left join timeframe_LY_&mth                       tmframe_LY            on all_cust.indiv_id = tmframe_LY.indiv_id
+left join em_&mth                                 email                 on all_cust.indiv_id = email.indiv_id
+left join em_open_&mth                            em_open               on all_cust.indiv_id = em_open.indiv_id
+left join dm_&mth                                 dm                    on all_cust.indiv_id = dm.indiv_id
+left join em_LY_&mth                              email_LY              on all_cust.indiv_id = email_LY.indiv_id
+left join em_open_LY_&mth                         em_open_LY            on all_cust.indiv_id = em_open_LY.indiv_id
+left join dm_LY_&mth                              dm_LY                 on all_cust.indiv_id = dm_LY.indiv_id
+left join value_segment_&mth                      mvs_lvs               on all_cust.indiv_id = mvs_lvs.indiv_id
+left join value_segment_LY_&mth                   mvs_lvs_LY            on all_cust.indiv_id = mvs_lvs_LY.indiv_id
+full outer join custgroup_yearly_&mth             cust_yearly           on all_cust.indiv_id =  cust_yearly.indiv_id
+full outer join custgroup_yearly_LY_&mth          cust_yearly_LY        on all_cust.indiv_id =  cust_yearly_LY.indiv_id;
+
+
+grant select on month_cust_&mth to public;
+
+select
+count(distinct indiv_id) as customers,
+sum(month_trans),
+sum(month_sales),
+sum(month_units),
+sum( month_gm) as gm_sales,
+sum(ly_month_trans),
+sum(ly_month_sales),
+sum(ly_month_units),
+sum(ly_month_gm) as gm_sales_ly,
+monthly_customer_group,
+monthly_customer_group_ly,
+channel_12mth
+from month_cust_&mth
+group by monthly_customer_group, monthly_customer_group_ly,  channel_12mth
