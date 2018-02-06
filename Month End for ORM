@@ -31,7 +31,7 @@ select
       and extended_sls_amt > 0
       and grs_mrgn_amt > 0
       group by indiv_id; 
-   drop table rolling12trans_&mth   
+
 create table rolling12trans_&mth as
 select
       distinct(dtl.indiv_id)                                                                                                                          as indiv_id,
@@ -46,8 +46,6 @@ left join gm_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between (&end_wk_idnt - 100 + 1)  and &end_wk_idnt 
 group by dtl.indiv_id, omni.channel, gm.gm_rate  ;
   
-  drop table  gm_timeframe_&mth;
-  drop table  timeframe_&mth
 --time frame metrics
 create table gm_timeframe_&mth as
 select 
@@ -72,7 +70,7 @@ left join gm_timeframe_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between &start_wk_idnt   and &end_wk_idnt 
 group by dtl.indiv_id, gm.gm_rate ;
 
-     drop table timeframe_&mth    
+
 --last and first shop 
 create table last_shop_excl_&mth as
   select indiv_id,
@@ -236,8 +234,6 @@ when a.rolling12_trans > 5                                    then 'Top' end) as
 from rolling12trans_LY_&mth a
 left join cust_&mthlly b on a.indiv_id=b.indiv_id;
 
-select * from custgroup_yearly_LY_&mth where rownum <55
-
 --define TY customer groups
 create table custgroup_yearly_&mth as
 select a.indiv_id,
@@ -247,9 +243,6 @@ when a.rolling12_trans > 2 and a.rolling12_trans <= 5         then 'Middle'
 when a.rolling12_trans > 5                                    then 'Top' end) as custgroup
 from rolling12trans_&mth a
 left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
-
-select * from rolling12trans_&mth where rownum <55
-drop table  month_cust_&mth 
 
 create table month_cust_&mth as
 select 
