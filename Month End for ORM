@@ -31,22 +31,23 @@ select
       and extended_sls_amt > 0
       and grs_mrgn_amt > 0
       group by indiv_id; 
-     
+   drop table rolling12trans_&mth   
 create table rolling12trans_&mth as
 select
       distinct(dtl.indiv_id)                                                                                                                          as indiv_id,
       count(distinct dtl.pos_trans_key)                                                                                                               as rolling12_trans,
       sum(dtl.extended_sls_amt)                                                                                                                       as rolling12_sales,
       sum(dtl.qty)                                                                                                                                    as rolling12_units,
-      sum((gm.gm_rate * dtl.extended_sls_amt) )                                                                                                       as gm,
+      gm.gm_rate * sum(dtl.extended_sls_amt)                                                                                                          as gm,
       omni.channel                                                                                                                                    as channel
 from ua_pos_trans_dtl dtl
 inner join omnichannel_&mth omni on dtl.indiv_id = omni.indiv_id
 left join gm_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between (&end_wk_idnt - 100 + 1)  and &end_wk_idnt 
-group by dtl.indiv_id, omni.channel;
+group by dtl.indiv_id, omni.channel, gm.gm_rate  ;
   
-  
+  drop table  gm_timeframe_&mth;
+  drop table  timeframe_&mth
 --time frame metrics
 create table gm_timeframe_&mth as
 select 
@@ -58,7 +59,6 @@ select
       and grs_mrgn_amt > 0
       group by indiv_id; 
      
-     drop table timeframe_&mth         
 --time frame metrics
 create table timeframe_&mth as
 select
@@ -66,12 +66,13 @@ select
       count(distinct dtl.pos_trans_key)                                                                                                               as timeframe_trans,
       sum(dtl.extended_sls_amt)                                                                                                                       as timeframe_sales,
       sum(dtl.qty)                                                                                                                                    as timeframe_units,
-      sum((gm.gm_rate * dtl.extended_sls_amt) )                                                                                                       as gm
+      gm.gm_rate * sum(dtl.extended_sls_amt)                                                                                                          as gm
 from ua_pos_trans_dtl dtl
 left join gm_timeframe_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between &start_wk_idnt   and &end_wk_idnt 
-group by dtl.indiv_id;
-        
+group by dtl.indiv_id, gm.gm_rate ;
+
+     drop table timeframe_&mth    
 --last and first shop 
 create table last_shop_excl_&mth as
   select indiv_id,
@@ -256,7 +257,7 @@ coalesce(all_cust.indiv_id , cust_yearly.indiv_id, cust_yearly_LY.indiv_id)     
 tmframe.timeframe_trans                                                                       as month_trans,
 tmframe.timeframe_sales                                                                       as month_sales,
 tmframe.timeframe_units                                                                       as month_units,
-tmframe_LY.gm                                                                                 as month_gm,
+tmframe.gm                                                                                    as month_gm,
 tmframe_LY.timeframe_trans                                                                    as ly_month_trans,
 tmframe_LY.timeframe_sales                                                                    as ly_month_sales,
 tmframe_LY.timeframe_units                                                                    as ly_month_units,
@@ -301,7 +302,6 @@ left join value_segment_LY_&mth                   mvs_lvs_LY            on all_c
 full outer join custgroup_yearly_&mth             cust_yearly           on all_cust.indiv_id =  cust_yearly.indiv_id
 full outer join custgroup_yearly_LY_&mth          cust_yearly_LY        on all_cust.indiv_id =  cust_yearly_LY.indiv_id;
 
-
 grant select on month_cust_&mth to public;
 
 select
@@ -309,7 +309,7 @@ count(distinct indiv_id) as customers,
 sum(month_trans),
 sum(month_sales),
 sum(month_units),
-sum( month_gm) as gm_sales,
+sum(month_gm) as gm_sales,
 sum(ly_month_trans),
 sum(ly_month_sales),
 sum(ly_month_units),
