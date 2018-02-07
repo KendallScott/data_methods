@@ -21,15 +21,16 @@ from (select dtl.indiv_id from ua_pos_trans_dtl dtl inner join ua_store str on d
 full outer join (select dtl.indiv_id from ua_pos_trans_dtl dtl inner join ua_store str on dtl.loc_key = str.loc_key
       where dtl.wk_idnt between ( &end_wk_idnt - 100 + 1) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt = '999'
       group by dtl.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
-      
+
 create table gm_&mth as
 select 
       distinct(indiv_id),
-      round((sum(grs_mrgn_amt))/sum(extended_sls_amt), 2) as gm_rate
-      from  ua_pos_trans_dtl
-      where unit_cost_amt > 0 and wk_idnt between (&end_wk_idnt - 100 + 1) and &end_wk_idnt
-      and extended_sls_amt > 0
-      and grs_mrgn_amt > 0
+      sum(dtl.extended_sls_amt)  as sales,
+      sum(dtl.grs_mrgn_amt) as gm
+      from  ua_pos_trans_dtl dtl 
+      inner join ua_store str on str.loc_key =dtl.loc_key
+      where str.distt_idnt !='999'
+      and wk_idnt between (&end_wk_idnt - 100 + 1) and &end_wk_idnt
       group by indiv_id; 
 
 create table rolling12trans_&mth as
@@ -38,25 +39,15 @@ select
       count(distinct dtl.pos_trans_key)                                                                                                               as rolling12_trans,
       sum(dtl.extended_sls_amt)                                                                                                                       as rolling12_sales,
       sum(dtl.qty)                                                                                                                                    as rolling12_units,
-      gm.gm_rate * sum(dtl.extended_sls_amt)                                                                                                          as gm,
+      max(gm.sales)                                                                                                                                   as store_sales,
+      max(gm.gm)                                                                                                                                      as store_gm,
       omni.channel                                                                                                                                    as channel
 from ua_pos_trans_dtl dtl
 inner join omnichannel_&mth omni on dtl.indiv_id = omni.indiv_id
 left join gm_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between (&end_wk_idnt - 100 + 1)  and &end_wk_idnt 
-group by dtl.indiv_id, omni.channel, gm.gm_rate  ;
-  
---time frame metrics
-create table gm_timeframe_&mth as
-select 
-      distinct(indiv_id),
-      round(sum(grs_mrgn_amt)/sum(extended_sls_amt), 2) as gm_rate
-      from  ua_pos_trans_dtl
-      where unit_cost_amt > 0 and wk_idnt between &start_wk_idnt  and &end_wk_idnt
-      and extended_sls_amt > 0
-      and grs_mrgn_amt > 0
-      group by indiv_id; 
-     
+group by dtl.indiv_id, omni.channel;
+
 --time frame metrics
 create table timeframe_&mth as
 select
@@ -64,11 +55,33 @@ select
       count(distinct dtl.pos_trans_key)                                                                                                               as timeframe_trans,
       sum(dtl.extended_sls_amt)                                                                                                                       as timeframe_sales,
       sum(dtl.qty)                                                                                                                                    as timeframe_units,
-      gm.gm_rate * sum(dtl.extended_sls_amt)                                                                                                          as gm
+      max(gm.sales)                                                                                                                                   as store_sales,
+      max(gm.gm)                                                                                                                                      as store_gm
 from ua_pos_trans_dtl dtl
 left join gm_timeframe_&mth gm on dtl.indiv_id = gm.indiv_id
 where dtl.wk_idnt  between &start_wk_idnt   and &end_wk_idnt 
-group by dtl.indiv_id, gm.gm_rate ;
+group by dtl.indiv_id, gm.sales, gm.gm ;
+
+select count(distinct indiv_id),
+sum(timeframe_trans),
+sum(timeframe_sales),
+sum(timeframe_units),
+sum(store_sales),
+sum(store_gm)
+from timeframe_&mth
+
+--time frame metrics
+create table gm_timeframe_&mth as
+select 
+      distinct(indiv_id),
+      sum(dtl.extended_sls_amt)  as sales,
+      sum(dtl.grs_mrgn_amt) as gm
+      from  ua_pos_trans_dtl dtl 
+      inner join ua_store str on str.loc_key =dtl.loc_key
+      where str.distt_idnt !='999'
+      and wk_idnt between &start_wk_idnt  and &end_wk_idnt
+      group by indiv_id; 
+     
 
 
 --last and first shop 
@@ -244,21 +257,25 @@ when a.rolling12_trans > 5                                    then 'Top' end) as
 from rolling12trans_&mth a
 left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
 
+drop table  month_cust_&mth 
 create table month_cust_&mth as
 select 
 coalesce(all_cust.indiv_id , cust_yearly.indiv_id, cust_yearly_LY.indiv_id)                   as indiv_id,
 tmframe.timeframe_trans                                                                       as month_trans,
 tmframe.timeframe_sales                                                                       as month_sales,
 tmframe.timeframe_units                                                                       as month_units,
-tmframe.gm                                                                                    as month_gm,
+tmframe.store_sales                                                                           as month_store_sales,
+tmframe.store_gm                                                                              as month_store_gm,
 tmframe_LY.timeframe_trans                                                                    as ly_month_trans,
 tmframe_LY.timeframe_sales                                                                    as ly_month_sales,
 tmframe_LY.timeframe_units                                                                    as ly_month_units,
-tmframe_LY.gm                                                                                 as ly_month_gm,
+tmframe_LY.store_sales                                                                        as ly_month_store_sales,
+tmframe_LY.store_gm                                                                           as ly_month_store_gm,
 mth.rolling12_sales                                                                           as sales_12mth,
 mth.rolling12_trans                                                                           as trans_12mth,
 mth.rolling12_units                                                                           as units_12mth,
-mth.gm                                                                                        as gm_12mth,
+mth.store_sales                                                                               as store_sales_12mth,
+mth.store_gm                                                                                  as store_gm_12mth,
 mth.channel                                                                                   as channel_12mth,
 cust.custgroup_month                                                                          as monthly_customer_group,
 custly.custgroup_month                                                                        as monthly_customer_group_ly,
@@ -267,7 +284,8 @@ cust_yearly_LY.custgroup                                                        
 mthly.rolling12_sales                                                                         as ly_sales_12mth,
 mthly.rolling12_trans                                                                         as ly_trans_12mth,
 mthly.rolling12_units                                                                         as ly_units_12mth,
-mthly.gm                                                                                      as ly_gm_12mth,
+mthly.store_sales                                                                             as ly_store_sales_12mth,
+mthly.store_gm                                                                                as ly_store_gm_12mth,
 mthly.channel                                                                                 as ly_channel_12mth,
 email.emailed                                                                                 as emailed_12mth,
 em_open.opens                                                                                 as email_opens_12mth,
@@ -302,13 +320,15 @@ count(distinct indiv_id) as customers,
 sum(month_trans),
 sum(month_sales),
 sum(month_units),
-sum(month_gm) as gm_sales,
+sum(month_store_sales) as store_sales,
+sum(month_store_gm) as gm_sales,
 sum(ly_month_trans),
 sum(ly_month_sales),
 sum(ly_month_units),
-sum(ly_month_gm) as gm_sales_ly,
+sum(ly_month_store_gm) as gm_sales_ly,
+sum(ly_month_store_sales) as store_sales_ly,
 monthly_customer_group,
 monthly_customer_group_ly,
 channel_12mth
 from month_cust_&mth
-group by monthly_customer_group, monthly_customer_group_ly,  channel_12mth
+group by monthly_customer_group, monthly_customer_group_ly , channel_12mth
