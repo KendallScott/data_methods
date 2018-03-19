@@ -1,7 +1,7 @@
 Changes, assuming we begin with similar structure as exists now:
 
 -Ecom transactions seamlessly integrated with t log
--Reliable GM for every transaction (ecom and store)
+-Reliable GM for every sku in every transaction (ecom and store)
 -Direct mail: coupon upc codes tied to campaigns (with CA/US flag)
 -Clicks tied to email
 -Add dates:
