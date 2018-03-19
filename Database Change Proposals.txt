@@ -3,7 +3,7 @@ Changes, assuming we begin with similar structure as exists now:
 -Ecom transactions seamlessly integrated with t log
 -Reliable GM for every transaction (ecom and store)
 -Direct mail: coupon upc codes tied to campaigns (with CA/US flag)
--Clicks tied 
+-Clicks tied to email
 -Add dates:
   -First sign-up for loyalty
   -First sign-up for email program
