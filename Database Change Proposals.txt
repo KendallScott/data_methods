@@ -9,3 +9,10 @@ Changes, assuming we begin with similar structure as exists now:
   -First sign-up for email program
   -First opt-out of email, last opt-out of email
 
+RFP suggestions: 
+Database vendor will implement, test, and validate data from multiple sources (internal sources and external sources) with minimal to no supervision. Vendor will work directly with organizations which own data imports to ensure accuracy and timeliness for data to be imported into the database. 
+
+Database vendor will offer expertise on data quality, recommendations for methods to improve data quality, and implementation for improvements (matching improvements, consolidation improvement, splits, etc.). This would also include an active response to any customer care issues, and the vendor would be take ownership of resolving identification issues from customer care (identify the issue, offer solutions, implement solutions, and validate the implementation was succesful).
+
+Database vendor would have ownership of ensuring data accuracy utilizing regular checks and validation techniques. If there are issues with data accuracy (missing files or process related issues), the the vendor would have in house the expertise needed to correct processes. If issues arise then the datbase vendor will communicate what issues there are with the data and an ETA for it to be corrected.
+
