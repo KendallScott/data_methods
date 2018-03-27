@@ -1,0 +1,85 @@
+select 
+distinct (to_date(lst_activity_dt))
+from ua_email_source
+where data_src_cd = 'ONLINE_EVT'
+and lst_activity_dt> '01-FEB-18'
+
+16-MAR-18 
+(fall?)
+
+23-MAR-18 
+(holiday and spring);
+drop table sweeps_fall_18;
+create table sweeps_fall_17 as
+select
+distinct
+rf.indiv_id
+from ua_email_source src
+inner join ua_email_ref rf on src.email_id = rf.email_id
+where src.data_src_cd = '16-MAR-18' ;
+
+create table sweeps_holiday_17 as
+select
+distinct rf.indiv_id
+from ua_email_source src
+inner join ua_email_ref rf on src.email_id = rf.email_id
+inner join ua_email email on email.email_id = rf.email_id
+inner join ua_pos_tm_day tm on to_date(src.lst_activity_dt) = tm.day_dt
+where tm.day_dt ='23-MAR-18'
+and src.data_src_cd = 'ONLINE_EVT'
+and email.email_addr_txt not in (select upper(EMAIL) from sweeps_spring);
+
+451,117
+
+select * from ua_email_source where rownum <55;
+select * from ua_email_source where rownum <100;
+
+create table sweeps_spring_17 as
+select
+distinct
+rf.indiv_id
+from ua_email_source src
+inner join ua_email_ref rf on src.email_id = rf.email_id
+inner join ua_email email on email.email_id = rf.email_id
+where src.data_src_cd = '23-MAR-18' 
+and email.email_addr_txt in (select upper(EMAIL) from sweeps_spring);
+
+select count(distinct indiv_id) from sweeps_holiday_17
+194,658
+
+drop table SWEEPS_FALL_17;
+drop table SWEEPS_SPRING;
+drop table SWEEPS_SPRING_17;
+drop table SWEEPS_HOLIDAY_17;
+select * from SWEEPS_FALL where rownum <55;
+select * from SWEEPS_HOLIDAY where rownum <55;
+select * from ua_email where rownum <55
+
+select * from SWEEPS_FALL where rownum <55
+
+select
+count(distinct rf.indiv_id),
+timeframe, 
+sum(timeframe_sales
+from(
+select
+rf.indiv_id,
+(case when dtl.day_idnt > tm.day_idnt then 'before submission'
+when dtl.day_idnt <= tm.day_idnt then 'after submission' 
+else null end) as timeframe,
+(case when dtl.day_idnt > tm.day_idnt then sum(dtl.extended_sls_amt)
+when dtl.day_idnt <= tm.day_idnt then sum(dtl.extended_sls_amt) 
+else null end) as timeframe_sales
+from SWEEPS_FALL sf
+inner join ua_email email on email.email_addr_txt = upper(sf.EMAIL)
+inner join ua_email_ref rf on email.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.valid_email_mktg_flg = 'Y' and rf.ca_valid_email_flg = 'N' and rf.VALID_ADDR_PREF_INDIV_EM_FLG ='Y'
+left join ua_pos_trans_dtl dtl on rf.indiv_id = dtl.indiv_id and dtl.wk_idnt between 201708 and 201807
+inner join ua_pos_tm_day tm on tm.day_dt = sf.submit_date
+group by rf.indiv_id, tm.day_idnt
+)
+
+39,750 preferred indiv_ids
+166,387 overall indiv_ids
+
+SWEEPS_HOLIDAY
+SWEEPS_SPRING
