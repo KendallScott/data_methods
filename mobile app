@@ -1,0 +1,61 @@
+select *
+from APP_DATA where rownum <55
+
+select distinct(device_time_stamp)
+from middle_tier.mt_connected_retail
+order by device_time_stamp
+
+select 
+dtl.wk_idnt
+count(distinct app.device_i
+,count(distinct dtl.indiv_id)          as cust_count
+,count(distinct dtl.pos_trans_key)     as trans
+,sum(dtl.extended_sls_amt)             as sales
+,sum(dtl.grs_mrgn_amt)                 as gm
+,sum(dtl.qty)                          as units
+from APP_DATA app
+inner join ua_loyalty loy on loy.loyalty_id = app.loyalty_id
+--inner join ua_store str on str.loc_key = app.store_id
+left join ua_pos_trans_dtl dtl on dtl.indiv_id = loy.indiv_id and to_date(dtl.trans_datetime) = to_date(substr(to_char(app.device_time_stamp), 1, 9))
+where dtl.trans_typ_key in (19,22,33)
+--and to_date(dtl.trans_datetime) between to_date(substr(to_char(app.device_time_stamp), 1, 9)) and to_date(substr(to_char(app.device_time_stamp), 1, 9))+5
+group by dtl.wk_idnt
+order by dtl.wk_idnt asc
+--where app.device_time_stamp <=dtl.trans_datetime
+
+select 
+dtl.wk_idnt
+,dtl.indiv_id                           as indiv_id
+,dtl.pos_trans_key                      as pos_trans_key
+,sum(dtl.extended_sls_amt)             as sales
+,sum(dtl.grs_mrgn_amt)                 as gm
+,sum(dtl.qty)                          as units
+from APP_DATA app
+inner join ua_loyalty loy on loy.loyalty_id = app.loyalty_id
+inner join ua_store str on str.loc_key = app.store_id
+inner join ua_pos_trans_dtl dtl on dtl.indiv_id = loy.indiv_id and to_date(dtl.trans_datetime) = to_date(substr(to_char(app.device_time_stamp), 1, 9))
+where dtl.trans_typ_key in (19,22,33)
+--and to_date(dtl.trans_datetime) between to_date(substr(to_char(app.device_time_stamp), 1, 9)) and to_date(substr(to_char(app.device_time_stamp), 1, 9))+5
+group by dtl.wk_idnt, dtl.indiv_id, dtl.pos_trans_key
+order by dtl.wk_idnt, asc
+
+select * 
+from middle_tier.mt_connected_retail app
+inner join ua_pos_tm_day tm on tm.day_dt = to_date(app.device_time_stamp)
+
+inner join ua_pos_trans_dtl dtl on dtl.trans_datetime > app.device_time_stamp
+
+select * from ua_pos_tm_day where rownum <11
+
+
+select to_date(app.device_time_stamp)
+from middle_tier.mt_connected_retail app
+where rownum <22
+
+select
+*
+--distinct(to_date(substr(to_char(app.device_time_stamp), 1, 9)))
+from middle_tier.mt_connected_retail app
+where to_date(substr(to_char(app.device_time_stamp), 1, 9)) = '27-DEC-17'
+--order by app.device_time_stamp asc
+
