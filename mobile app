@@ -1,27 +1,45 @@
-select *
-from APP_DATA where rownum <55
-
-select distinct(device_time_stamp)
-from middle_tier.mt_connected_retail
-order by device_time_stamp
-
-select 
-dtl.wk_idnt
-count(distinct app.device_i
-,count(distinct dtl.indiv_id)          as cust_count
-,count(distinct dtl.pos_trans_key)     as trans
-,sum(dtl.extended_sls_amt)             as sales
-,sum(dtl.grs_mrgn_amt)                 as gm
-,sum(dtl.qty)                          as units
+create table APP_DATA_CLEANED as
+select
+day_idnt                                                        as day_idnt, 
+concat(DBMS_Random.Value(1,9), app.device_time_stamp)           as session_id,
+(case when app.loyalty_id is not null then (concat(DBMS_Random.Value(1,9), app.device_time_stamp))
+else null end)                                                  as cust_session_id,
+app.device_time_stamp,
+app.loyalty_id, 
+app.store_id, 
+app.device_id
 from APP_DATA app
-inner join ua_loyalty loy on loy.loyalty_id = app.loyalty_id
---inner join ua_store str on str.loc_key = app.store_id
-left join ua_pos_trans_dtl dtl on dtl.indiv_id = loy.indiv_id and to_date(dtl.trans_datetime) = to_date(substr(to_char(app.device_time_stamp), 1, 9))
-where dtl.trans_typ_key in (19,22,33)
---and to_date(dtl.trans_datetime) between to_date(substr(to_char(app.device_time_stamp), 1, 9)) and to_date(substr(to_char(app.device_time_stamp), 1, 9))+5
-group by dtl.wk_idnt
-order by dtl.wk_idnt asc
---where app.device_time_stamp <=dtl.trans_datetime
+inner join ua_pos_tm_day tm on to_date(substr(DEVICE_TIME_STAMP, 1, 10),'YYYY-MM-DD') = tm.day_dt;
+
+--sales by week, matched to store
+select 
+tm.wk_idnt                                                                           as week,
+count(distinct session_id)                                                           as sessions,
+(case when app.loyalty_id is not null then 'id sessions'
+else null end)                                                                     as id_sessions,
+(case when app.loyalty_id is not null then 'id sessions'
+else null end)
+--count(distinct CONCAT(app.device_time_stamp, app.device_id, to_char(loy.indiv_id)))  as id_sessions,
+--count(distinct CONCAT(app.device_time_stamp, app.device_id, to_char(dtl.indiv_id)))  as purchasing_sessions,
+count(distinct loy.indiv_id)                                                         as id_traffic,
+count(distinct dtl.indiv_id)                                                         as cust_count,
+count(distinct dtl.pos_trans_key)                                                    as trans,
+sum(dtl.extended_sls_amt)                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                as gm,
+sum(dtl.qty)                                                                         as units 
+from APP_DATA_CLEANED app
+inner join ua_pos_tm_day tm           on  app.day_idnt= tm.day_idnt
+left join ua_loyalty loy              on loy.loyalty_id = app.loyalty_id 
+left join ua_pos_trans_dtl dtl        on loy.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+left join ua_store str                on str.loc_key = dtl.loc_key and app.store_id = str.loc_key
+group by tm.wk_idnt
+order by tm.wk_idnt asc;
+
+LMR90227299550
+1000092480223
+select * from ua_loyalty where rownum <55;
+
+
 
 select 
 dtl.wk_idnt
