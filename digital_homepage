@@ -1,0 +1,23 @@
+create table web_viewers as
+select 
+distinct(web.indiv_id),
+tm.day_idnt
+from ua_crmt_page_view web
+inner join ua_pos_tm_day tm on to_date(web.timestamp_1)= to_date(tm.day_dt)
+where tm.day_idnt between 2015001 and 2017364;
+
+select 
+wk_idnt,
+count(distinct indiv_id),
+count(distinct session_id)
+from  ua_crmt_page_view
+where  page_id = 'HOME PAGE'
+and wk_idnt between 201801 and 201808
+group by wk_idnt
+order by wk_idnt asc
+
+
+
+
+97,113	
+139,254
