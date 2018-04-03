@@ -12,3 +12,13 @@ Decile	MINSpend	  MAXSpend	    Median
 (combination of Joann's, AC Moore, and Hobby Lobby)
 
 middle_tier.customer_insights_agg
+
+select * from middle_tier.customer_insights_agg
+INDIV_ID,         DECILE, SPEND
+1000092496754	      3	    122.6
+1000092497760	      4	    161.46
+1000092498078	      6	    494.3
+1000092498097	      3	    98.54
+1000092498790	      3	    129.84
+1000092499472	      2	    57.6
+1000092499908	      2	    89.76
