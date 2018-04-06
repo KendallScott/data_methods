@@ -9,6 +9,14 @@ Changes, assuming we begin with similar structure as exists now:
   -First sign-up for email program
   -First opt-out of email, last opt-out of email
 
+Kendall's notes:
+(just a note, I have talked to IT and they have a project to add in gross margin for ecom tied to Reporting 2.0. Because of the complexity of this, it isn't being hanled as a ticket, but as a new project).
+
+-email tables: Will have one table for both emailed and control (run a check against emailed to ensure only customers who didn't receive an email are marked as being in the control). I think it should be in ua_email_resolution.
+-add dropship inventory/orders to the transaction tables (havn't heard this fix is being implemented yet).
+-identify all customers who purchase using a credit card, and don't remove any customers for not having contact information.
+-update the ua_individual_agg tables to pull from store/ecom for the data
+
 RFP suggestions: 
 Database vendor will implement, test, and validate data from multiple sources (internal sources and external sources) with minimal to no supervision. Vendor will work directly with organizations which own data exports to ensure accuracy and timeliness for data to be imported into the database. 
 
