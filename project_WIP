@@ -1,0 +1,43 @@
+create table web_viewers as
+select 
+distinct(web.indiv_id),
+tm.day_idnt
+from ia_crmt_page_view web
+Inner Join Ua_Pos_Tm_Day Tm On To_Date(Web.Timestamp_1)= To_Date(Tm.Day_Dt)
+where tm.day_idnt between 2015001 and 2017364;
+
+Select * From Ua_Crmt_Page_View 
+Where Page_Id Like '%PROJECT DETAIL%'
+and timestamp_1 between '26-NOV-17' and '02-DEC-17'
+
+Select 
+Web.Page_Id,
+Count(Distinct Web.Indiv_Id) As Customers,
+Count(Distinct Web.Session_Id) As Sessions,
+count(distinct dtl.indiv_id) as purchasing_customers,
+sum(dtl.extended_sls_amt) as sales
+From Ua_Crmt_Page_View  Web
+Inner Join Ua_Pos_Tm_Day Tm On To_Date(Web.Timestamp_1)= To_Date(Tm.Day_Dt)
+left Join Ua_Pos_Trans_Dtl Dtl On Web.Indiv_Id = Dtl.Indiv_Id
+Where web.Page_Id Like '%PROJECT DETAIL%'
+And web.Timestamp_1 Between '26-NOV-17' And '02-DEC-17'
+And Dtl.Day_Idnt Between 2017302 And 2017308
+and dtl.day_idnt > tm.day_idnt
+Group By Web.Page_Id
+order by sessions desc
+
+Select 
+Web.Page_Id,
+Count(Distinct Web.Indiv_Id) As Customers,
+Count(Distinct Web.Session_Id) As Sessions
+--Count(Distinct Dtl.Indiv_Id) As Purchasing_Customers,
+--sum(dtl.extended_sls_amt) as sales
+From Ua_Crmt_Page_View  Web
+Inner Join Ua_Pos_Tm_Day Tm On To_Date(Web.Timestamp_1)= To_Date(Tm.Day_Dt)
+--left Join Ua_Pos_Trans_Dtl Dtl On Web.Indiv_Id = Dtl.Indiv_Id
+Where web.Page_Id Like '%PROJECT DETAIL%'
+And web.Timestamp_1 Between '26-NOV-17' And '02-DEC-17'
+--And Dtl.Day_Idnt Between 2017302 And 2017308
+--and dtl.day_idnt > tm.day_idnt
+Group By Web.Page_Id
+order by sessions desc
