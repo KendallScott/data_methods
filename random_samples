@@ -1,0 +1,89 @@
+NETEZZA
+
+--overall product group sales, customers, etc.
+select
+c.grp_desc,
+a.indiv_id,
+sum(b.extended_sls_amt)as sales,
+count(distinct b.pos_trans_key)as transactions,
+sum(b.qty)as quantity,
+sum(b.grs_mrgn_amt) as gross_margin
+from acx_tlog_xref_dm a
+inner join pos_mrchnds_dtl b on a.pos_trans_key = b.pos_trans_key
+inner join prod_sku_dm c on b.sku_key=c.sku_key
+where b.day_idnt between x and x
+group by c.grp_desc, indiv_id;
+
+CASE statement:
+
+create temp table sales_groups_by_customer as
+select distinct indiv_id,
+sales,
+(case when sales <= 50 then '0 to 50'
+when sales between 50 and 124.9999 then '50 to 125'
+when sales between 125 and 249.9999 then '125 to 250'
+when sales between 250 and 499.9999 then '250 to 500'
+when sales > 500 then 'More than 500' end) as yearly_sales
+from sales_per_customer
+
+ROCK
+
+EMAIL
+
+CREATE TABLE trigger_email nologging parallel 8 pctfree 0
+as
+SELECT 
+res.indiv_id,
+res.contact_urn,
+res.email_id,
+camp.campaign_id,
+substr(camp.campaign_name, 1, 22) as campaign,
+    res.wk_idnt
+      FROM ua_email_resolution  res
+           INNER JOIN ua_campaign camp ON res.campaign_id = camp.campaign_id
+     WHERE res.wk_idnt BETWEEN 201701 AND 201728
+     and (substr(to_char(camp.campaign_id), 1, 5) in ('10606', '10784', '10787', '10788', '10789', '12843', '12844', '12845', '12846', '24175', '24194', '26291', '27081', '27082', '28844', '29450', '29453', '29454', '29456', '29458', '29461', '29464', '29466', '29468', '29469', '29471', '29475', '36179', '19229', '21284', '26176', '27023', '27061', '27063', '28821', '28823', '30295', '30871', '30872', '36911', '36946', '36947', '36950', '36967', '36968', '36972', '36974', '36978', '36979', '36984', '36985', '36986', '36987', '36991', '36992', '36993', '36996', '36997', '37127', '37147', '37148', '37149', '37151', '37152', '37153', '38877', '39230', '40520', '40526', '50442', '50443', '50445', '50446', '50447', '50448', '50449', '50450', '50451', '50452', '50455', '50456', '29757', '20064', '20067', '20814', '21268', '21269', '21270', '21271', '21272', '21273', '21274', '21275', '21276', '21277', '21487', '21488', '21748', '32944,  20839', '25048', '25049', '25050', '33139', '43666', '43667', '44203', '44204', '44205', '44206', '24378')
+        or substr(to_char(camp.campaign_id), 1, 4) in ('4344', '4008', '3010', '3086', '4713')
+        or upper(camp.campaign_name) like '%TRANSACTIONAL%' or upper(camp.campaign_name) like '%TRIGGER%' or upper(camp.campaign_name) like '%PURCHASECONF%' or upper(camp.campaign_name) like '%PASSWORD%' 
+        )
+--creating the table of us email addresses
+create table us_emails as
+select distinct email_id
+from ua_email_contact_history
+where wk_idnt between 201701 and 201728
+and email_id in (select distinct email_id from ua_email_ref where ca_valid_email_flg = 'N');
+
+SELECT 
+         (case when res.wk_idnt between 201701 and 201704 then 'FEBRUARY'
+         when res.wk_idnt between 201705 and 201709 then 'MARCH'
+         when res.wk_idnt between 201710 and 201713 then 'APRIL'
+         when res.wk_idnt between 201714 and 201717 then 'MAY'
+         when res.wk_idnt between 201718 and 201722 then 'JUNE'
+         when res.wk_idnt between 201723 and 201726 then 'JULY'
+         when res.wk_idnt between 201727 and 201730 then 'AUGUST' end) as mth,
+         res.wk_idnt,
+         trg.campaign, 
+         COUNT (distinct trg.contact_urn) AS sent,
+         COUNT (res.max_click_dt)  AS clicks,
+         COUNT (res.opened_dt) AS opens
+    FROM ua_email_resolution res
+    inner join  trigger_email trg on res.email_id=trg.email_id and res.contact_urn=trg.contact_urn
+   WHERE    res.wk_idnt BETWEEN 201701 AND 201728
+            AND res.email_id IN (SELECT DISTINCT email_id
+                                   FROM us_emails)
+GROUP BY res.wk_idnt, trg.campaign
+ORDER BY res.wk_idnt, trg.campaign
+
+
+online--> in store tables
+select * 
+from ua_ecom_order_dtl ecom
+inner join ua_pos_trans_dtl pos on ecom.indiv_id=pos.indiv_id and ecom.dmnd_net_ttl_amt = pos.extended_sls_amt and ecom.dmnd_unit_cnt=pos.qty --and ecom.invoicedatetime=pos.trans_datetime
+inner join ua_pos_prod_sku sku on pos.sku_key=sku.sku_key
+inner join ua_store str on pos.loc_key=str.loc_idnt
+where ecom.sku_name=sku.sku_idnt
+and str.distt_idnt!=999
+and pos.day_idnt> 2017001
+
+Netezza
+org_lc_dm: zone = regn_idnt
