@@ -1,0 +1,63 @@
+create temp table department_customers_24mth as
+select
+b.day_idnt as days,
+max(b.day_idnt) as first_day,
+min(b.day_idnt) as last_day,
+c.dept_desc,
+a.indiv_id,
+sum(b.extended_sls_amt)as sales,
+count(distinct b.pos_trans_key)as transactions,
+sum(b.qty)as quantity,
+sum(b.grs_mrgn_amt) as gross_margin
+from acx_tlog_xref_dm a
+inner join pos_mrchnds_dtl b on a.pos_trans_key = b.pos_trans_key
+inner join prod_sku_dm c on b.sku_key=c.sku_key
+where b.day_idnt between '2015210' and '2017210'
+group by b.day_idnt, c.dept_desc, indiv_id;
+
+create temp table department_customers_24mth_days as
+select
+count(distinct days) as days,
+dept_desc,
+indiv_id,
+sum(sales)as sales,
+count(transactions)as transactions,
+sum(quantity)as quantity,
+sum(gross_margin) as gross_margin
+from department_customers_24mth a
+group by dept_desc, indiv_id;
+
+
+select
+dept_desc,
+count(distinct indiv_id) as indiv_id,
+sum(days) as days,
+sum(sales) as sales,
+sum(gross_margin) as gm,
+sum(quantity) as units,
+sum(transactions) as transactions
+--sum(last_day)-sum(first_day) as time
+from department_customers_24mth_days
+where days >1
+group by dept_desc
+order by dept_desc asc;
+
+create temp table days_from_purchase as
+select
+indiv_id,
+dept_desc,
+EXTRACT (DAY FROM (max(b.day_dt)-min(b.day_dt)) ) as days,
+count(days)
+from department_customers_24mth a
+inner join time_day_dm b on a.days=b.day_idnt
+group by dept_desc,indiv_id
+
+
+select
+dept_desc,
+avg(days) as timeline_days,
+sum(count) as days,
+count(distinct indiv_id) as customers
+from days_from_purchase
+where days > 0
+group by dept_desc
