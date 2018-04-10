@@ -1,0 +1,134 @@
+--overall company id'd
+select
+tm.wk_idnt,
+'TOTAL' as product_group,
+count(distinct a.indiv_id)as customers,
+sum(b.extended_sls_amt)as sales,
+count(distinct b.pos_trans_key)as transactions,
+sum(b.qty)as units,
+sum(b.grs_mrgn_amt) as gross_margin
+from acx_tlog_xref_dm a
+inner join pos_mrchnds_dtl b on a.pos_trans_key = b.pos_trans_key
+inner join prod_sku_dm c on b.sku_key=c.sku_key
+inner join time_day_dm tm on b.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 2017364
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt
+
+--overall company
+select
+tm.wk_idnt,
+'TOTAL' as product_group,
+sum(b.extended_sls_amt)as sales,
+count(distinct b.pos_trans_key)as transactions,
+sum(b.qty)as units,
+sum(b.grs_mrgn_amt) as gross_margin
+from pos_mrchnds_dtl b
+inner join prod_sku_dm c on b.sku_key=c.sku_key
+inner join time_day_dm tm on b.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 201729
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt
+
+--overall company by product group id'd
+select
+tm.wk_idnt,
+'TOTAL' as product_group,
+count(distinct a.indiv_id)as customers,
+sum(b.extended_sls_amt)as sales,
+count(distinct b.pos_trans_key)as transactions,
+sum(b.qty)as units,
+sum(b.grs_mrgn_amt) as gross_margin
+from acx_tlog_xref_dm a
+inner join pos_mrchnds_dtl b on a.pos_trans_key = b.pos_trans_key
+inner join prod_sku_dm c on b.sku_key=c.sku_key
+inner join time_day_dm tm on b.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 201753
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt
+
+--overall company by product group id'd
+select
+tm.wk_idnt,
+sku.grp_desc,
+count(distinct xref.indiv_id)as customers,
+sum(dtl.extended_sls_amt)as sales,
+count(distinct dtl.pos_trans_key)as transactions,
+sum(dtl.qty)as units,
+sum(dtl.grs_mrgn_amt) as gross_margin
+from acx_tlog_xref_dm xref
+inner join pos_mrchnds_dtl dtl on xref.pos_trans_key = dtl.pos_trans_key
+inner join prod_sku_dm sku on dtl.sku_key=sku.sku_key
+inner join time_day_dm tm on dtl.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 201753
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt, sku.grp_desc
+
+--overall company by product group
+select
+tm.wk_idnt,
+sku.grp_desc,
+sum(dtl.extended_sls_amt)as sales,
+count(distinct dtl.pos_trans_key)as transactions,
+sum(dtl.qty)as units,
+sum(dtl.grs_mrgn_amt) as gross_margin
+from pos_mrchnds_dtl dtl
+inner join prod_sku_dm sku on dtl.sku_key=sku.sku_key
+inner join time_day_dm tm on dtl.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 201753
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt, sku.grp_desc
+
+--overall company by product group
+select
+tm.wk_idnt,
+sku.grp_desc,
+sum(dtl.extended_sls_amt)as sales,
+count(distinct dtl.pos_trans_key)as transactions,
+sum(dtl.qty)as units,
+sum(dtl.grs_mrgn_amt) as gross_margin
+from pos_mrchnds_dtl dtl
+inner join prod_sku_dm sku on dtl.sku_key=sku.sku_key
+inner join time_day_dm tm on dtl.day_idnt=tm.day_idnt
+where tm.wk_idnt between 201501 and 201753
+and b.trans_type_key in (19,22,33)
+group by tm.wk_idnt, sku.grp_desc
+
+select * from prod_sku_dm limit 10
+select * from org_loc_dm limit 20
+
+--store perforamnce to last year by state
+select
+ty.date,
+ty.grp_desc,
+ty.sales_ty,
+ly.sales_ly
+from
+        (select
+        dtl.day_idnt as day_idnt,
+        prod.grp_desc,
+        tm.day_dt as date,
+        sum(dtl.extended_sls_amt) as sales_ty
+        from
+        pos_mrchnds_dtl dtl
+        inner join org_loc_dm loc on dtl.loc_key=loc.loc_key
+        inner join time_day_dm  tm       on dtl.day_idnt=tm.day_idnt
+        inner join prod_sku_dm prod on dtl.sku_key=prod.sku_key
+        where dtl.day_idnt between 2017001 and 2017364
+        and loc.loc_cntry_desc='USA'
+        and dtl.trans_type_key in (19,22,33)
+        group by dtl.day_idnt, prod.grp_desc, tm.day_dt) as ty
+inner join
+        (select
+        dtl.day_idnt,
+        prod.grp_desc,
+        sum(dtl.extended_sls_amt) as sales_ly
+        from
+        pos_mrchnds_dtl dtl
+        inner join org_loc_dm loc on dtl.loc_key=loc.loc_key
+        inner join time_day_dm  tm       on dtl.day_idnt=tm.day_idnt
+        inner join prod_sku_dm prod on dtl.sku_key=prod.sku_key
+        where dtl.day_idnt between 2017001-1000 and 2017364-1000
+        and loc.loc_cntry_desc='USA'
+	and dtl.trans_type_key in (19,22,33)
+        group by prod.grp_desc, dtl.day_idnt) as ly on ly.grp_desc=ty.grp_desc and substr(ly.day_idnt, 5, 8)=substr(ty.day_idnt, 5, 8)
