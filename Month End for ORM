@@ -1,9 +1,10 @@
+set worksheetname agg_tables;
 -------this year metrics-------
-DEFINE start_day_idnt = '2018001';
-DEFINE end_day_idnt = '2018028';
-DEFINE start_wk_idnt = '201801';
-DEFINE end_wk_idnt = '201804';
-DEFINE mth = 'FEB';
+DEFINE start_day_idnt = '2018029';
+DEFINE end_day_idnt = '2018063';
+DEFINE start_wk_idnt = '201805';
+DEFINE end_wk_idnt = '201809';
+DEFINE mth = 'MAR';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -194,11 +195,11 @@ use the below definitions and rerun code above
                                                  |
 */
 -------last year metrics-------
-DEFINE start_day_idnt = '2017001';
-DEFINE end_day_idnt = '2017028';
-DEFINE start_wk_idnt = '201701';
-DEFINE end_wk_idnt = '201704';
-DEFINE mth = 'LY_FEB';
+DEFINE start_day_idnt = '2017029';
+DEFINE end_day_idnt = '2017063';
+DEFINE start_wk_idnt = '201705';
+DEFINE end_wk_idnt = '201709';
+DEFINE mth = 'LY_MAR';
 
 /*Email metrics*/
 --emailed 
@@ -285,7 +286,7 @@ left join mvs_all_&mth b on a.indiv_id = b.indiv_id;
 
 
 --define LY customer groups
-DEFINE mthlly = 'jan16';
+DEFINE mthlly = 'mar16';
 
 --LLY customers - Identify customers with prior 12month sales (prior Nov 2015)
 create table cust_&mthlly as
