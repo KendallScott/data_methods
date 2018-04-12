@@ -1,0 +1,5 @@
+list of your user tables:
+SELECT
+  table_name
+FROM
+  user_tables
