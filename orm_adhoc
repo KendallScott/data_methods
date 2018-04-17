@@ -57,3 +57,6 @@ group by stre.indiv_id, ecom.indiv_id, coalesce(stre.dept_desc, ecom.dept_desc),
 group by stre.indiv_id, ecom.indiv_id, coalesce(stre.dept_desc, ecom.dept_desc, case when dmnd_ttl_promo_amt <0 then 'P' else 'R' end as 'price_typ_ind', custgroup
 
 select
+
+select * from ua_pos_prod_sku where
+dept_desc like '%ACCENTS & CONTAINERS%',  '%CANDLES%',   '%CHRISTMAS%',  '% CUSTOM FLORAL%',   '%FLORAL%',   '%HOME ACCENTS%',  '% MINI SEASON%'
