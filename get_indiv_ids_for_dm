@@ -1,0 +1,6 @@
+select distinct b.indiv_id
+from ua_direct_mail_contact_history a
+inner join ua_individual            b on a.addr_id           = b.addr_id
+inner join ua_campaign              c on a.campaign_id       = c.campaign_id
+where c.campaign_id = yourcampaign
+and a.control_cd = 0; 
