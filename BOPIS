@@ -1,0 +1,4 @@
+
+select * 
+from ua_ecom_order_dtl ecom
+inner join bopis bps on substr(bps.order_id, 3, 10) = substr(ecom.order_id, 4, 10)
