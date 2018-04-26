@@ -2,3 +2,17 @@
 select * 
 from ua_ecom_order_dtl ecom
 inner join bopis bps on substr(bps.order_id, 3, 10) = substr(ecom.order_id, 4, 10)
+
+
+select 
+count(distinct ecom.indiv_id )                                            as customers,
+ecom.order_id                                                                           as order_id,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join bopis bps on substr(bps.order_id, 3, 10) = substr(ecom.order_id, 4, 10)
+inner join ua_pos_trans_dtl dtl on dtl.indiv_id = ecom.indiv_id
+left join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
+and dtl.indiv_id||(dtl.day_idnt) in (select ecom.indiv_id||tm.day_idnt from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt )
+and dtl.indiv_id||(dtl.day_idnt)||dtl.extended_sls_amt not in (select ecom.indiv_id||tm.day_idnt||ecom.FLFLL_NET_TTL_AMT from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt )
+
