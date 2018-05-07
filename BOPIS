@@ -333,3 +333,71 @@ from cust_groups_&mth  cust
 --inner join bopis_orders bps on bps.indiv_id = cust.indiv_id
 where indiv_id not in (select indiv_id from bopis_orders)
 group by cust.custgroup
+
+
+
+drop table bopis_orders;
+create table bopis_orders as
+select
+bps.order_id as bps_order_id,
+ecom.indiv_id,
+ecom.order_id,
+tm.day_dt
+from bopis bps 
+left join ua_ecom_order_dtl ecom on substr(bps.order_id, 0, 10) = substr(ecom.order_id, 4, 10)
+left join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt);
+
+select
+* 
+from bopis_orders bps
+inner join bopis bopis on bopis.order_id = bps.bps_order_id
+where bps.order_id is null
+
+select 
+ecom.order_id as ecom_order,
+bps.order_id as bps_order
+from ua_ecom_order_dtl ecom
+full outer join bopis bps on substr(bps.order_id, 0, 10) < substr(ecom.order_id, 4, 10)
+left join ua_pos_tm_day tm on (tm.day_dt) =  to_date(ecom.dmnd_dt) 
+where tm.wk_idnt = 201812
+and ecom.order_id in (select order_id from bopis_orders)
+and ecom.order_id is null
+order by bps.order_id
+
+select * from 
+
+select * from bopis_orders where rownum <22
+
+select * from bopis where rownum <55
+
+select 
+*
+from bopis
+where order_day between '22-APR-18' and '28-APR-18'
+and order_id not in  ( select substr(order_id, 4, 10) from bopis_orders)
+44428
+
+select
+count(distinct ecom.order_id) as orders
+from ua_ecom_order_dtl ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+where ecom.order_id in (select order_id from bopis_orders)
+and tm.wk_idnt = 201812
+42899
+
+select 
+count(distinct bps.order_id)
+from bopis bps
+where bps.order_day between '22-APR-18' and '28-APR-18'
+and bps.email_address  not like 'LUE%'
+44428
+
+select * from bopis where rownum <55
+
+
+
+select * 
+from ua_ecom_order_dtl ecom 
+where order_id not like '000%'
+
+inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
