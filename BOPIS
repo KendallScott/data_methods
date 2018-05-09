@@ -401,3 +401,40 @@ from ua_ecom_order_dtl ecom
 where order_id not like '000%'
 
 inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
+
+DEFINE end_wk_idnt = '201812';
+
+select
+count(distinct ecom.indiv_id )                                            as customers,
+count(distinct ecom.order_id)                                            as orders,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+where order_id in (select order_id from bopis_orders)
+and tm.wk_idnt = 201812;
+
+select
+count(distinct bps.order_id) as orders
+from bopis bps
+where bps.TBL_DATE_TABLE_FISCALWEEK = 12
+and PICKUP_DATE !='Canceled'
+44,428
+41,230
+
+
+TBL_DATE_TABLE_FISCALWEEK
+
+select * from bopis where rownum <88
+
+
+select 
+distinct
+bps.email_address,
+count(distinct bps.order_id) as orders,
+email.email_addr_txt
+from bopis bps
+left join ua_email email on email.email_addr_txt =upper(bps.email_address)
+where bps.order_day between '29-APR-18' and '05-MAY-18'
+and email_addr_txt is null
+group by bps.email_address, email.email_addr_txt
