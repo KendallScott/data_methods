@@ -1,10 +1,10 @@
 set worksheetname agg_tables;
 -------this year metrics-------
-DEFINE start_day_idnt = '2018029';
-DEFINE end_day_idnt = '2018063';
-DEFINE start_wk_idnt = '201805';
-DEFINE end_wk_idnt = '201809';
-DEFINE mth = 'MAR';
+DEFINE start_day_idnt = '2018064';
+DEFINE end_day_idnt = '2018091';
+DEFINE start_wk_idnt = '201810';
+DEFINE end_wk_idnt = '201813';
+DEFINE mth = 'APR';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -157,11 +157,11 @@ use the below definitions and rerun code above
                                                  |
 */
 -------last year metrics-------
-DEFINE start_day_idnt = '2017029';
-DEFINE end_day_idnt = '2017063';
-DEFINE start_wk_idnt = '201705';
-DEFINE end_wk_idnt = '201709';
-DEFINE mth = 'LY_MAR';
+DEFINE start_day_idnt = '2017064';
+DEFINE end_day_idnt = '2017091';
+DEFINE start_wk_idnt = '201710';
+DEFINE end_wk_idnt = '201713';
+DEFINE mth = 'LY_APR';
 
 /*Email metrics*/
 --emailed 
