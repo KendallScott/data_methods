@@ -248,7 +248,7 @@ left join mvs_all_&mth b on a.indiv_id = b.indiv_id;
 
 
 --define LY customer groups
-DEFINE mthlly = 'mar16';
+DEFINE mthlly = 'apr16';
 
 --LLY customers - Identify customers with prior 12month sales (prior Nov 2015)
 create table cust_&mthlly as
