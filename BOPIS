@@ -9,7 +9,14 @@ ecom.order_id,
 tm.day_dt
 from ua_ecom_order_dtl ecom
 inner join bopis bps on substr(bps.order_id, 0, 10) = substr(ecom.order_id, 4, 10)
-inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt);
+inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
+where PICKUP_DATE !='Canceled';
+
+/*get date range for orders*/
+select
+min(day_dt),
+max(day_dt)
+from bopis_orders
 
 /*bopis days*/
 create table bopis_days as
@@ -29,7 +36,29 @@ sum(ecom.flfll_net_ttl_amt)                                               as bop
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
 where order_id in (select order_id from bopis_orders);
+/*weekly numbers*/
+select
+count(distinct ecom.indiv_id )                                            as customers,
+count(distinct ecom.order_id)                                            as orders,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
+where order_id in (select order_id from bopis_orders)
+where tm.wk_idnt = 201813;
 
+select
+count(distinct ecom.indiv_id )                                            as customers,
+count(distinct ecom.order_id)                                            as orders,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
+--inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
+where order_id in (select order_id from bopis_orders)
+and tm.wk_idnt = 201812;
+
+/*30 days prior to bopis order*/
 select
 count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                    as customers, 
 sum((coalesce(stre.store_trans, 0)) +  coalesce(ecom.ecom_trans, 0))                     as trans,
@@ -59,7 +88,8 @@ full outer join (
         inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
         where tm.day_dt between bps.first_purchase-31 and bps.first_purchase-1
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
-        
+
+/*30 days after bopis order*/
 select
 count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                    as customers, 
 sum((coalesce(stre.store_trans, 0)) +  coalesce(ecom.ecom_trans, 0))                     as trans,
@@ -76,7 +106,7 @@ select
         inner join ua_store str on dtl.loc_key = str.loc_key
         inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
-        where tm.day_dt between bps.first_purchase+2 and bps.first_purchase+32 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
+        where tm.day_dt between bps.first_purchase+3 and bps.first_purchase+33 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
 full outer join (
         select
@@ -87,7 +117,7 @@ full outer join (
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
         inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
-        where tm.day_dt between  bps.first_purchase+2 and bps.first_purchase+32 
+        where tm.day_dt between  bps.first_purchase+3 and bps.first_purchase+33 
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
 /*one year prior*/
@@ -137,7 +167,7 @@ select
         inner join ua_store str on dtl.loc_key = str.loc_key
         inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
-        where tm.day_dt between bps.first_purchase-365 +2 and bps.first_purchase-365 +32 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
+        where tm.day_dt between bps.first_purchase-365 +3 and bps.first_purchase-365 +33 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
 full outer join (
         select
@@ -148,42 +178,93 @@ full outer join (
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
         inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '31-MAR-18'
-        where tm.day_dt between  bps.first_purchase-365 +2 and bps.first_purchase-365 +32 
+        where tm.day_dt between  bps.first_purchase-365 +3 and bps.first_purchase-365 +33 
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
-        
-
+      
+/*basket analysis*/
 select 
-sku.sku_desc,
+sku.class_desc,
 count(distinct ecom.indiv_id )                                            as customers,
 count(distinct ecom.order_id)                                            as orders,
 sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
-inner join bopis bps on substr(bps.order_id, 3, 10) = substr(ecom.order_id, 4, 10)
-#NAME?
-left join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
---and dtl.indiv_id||(dtl.day_idnt) in (select ecom.indiv_id||tm.day_idnt from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt )
---and dtl.indiv_id||(dtl.day_idnt)||dtl.extended_sls_amt not in (select ecom.indiv_id||tm.day_idnt||ecom.FLFLL_NET_TTL_AMT from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfl
-group by sku.sku_desc
+inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
+where ecom.order_id in (select order_id from bopis_orders)
+--and ecom.order_id in (select ecom.order_id from ua_ecom_order_dtl ecom inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt inner join bopis_orders bps on bps.order_id = ecom.order_id and sku.class_desc = '644 KEY ITEM WALL FRAMES')
+group by sku.class_desc
 order by bopis_sales desc;
 
 select 
-sku.grp_desc,
 count(distinct ecom.indiv_id )                                            as customers,
 count(distinct ecom.order_id)                                            as orders,
 sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
-inner join bopis bps on substr(bps.order_id, 3, 10) = substr(ecom.order_id, 4, 10)
-left join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
---and dtl.indiv_id||(dtl.day_idnt) in (select ecom.indiv_id||tm.day_idnt from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt )
---and dtl.indiv_id||(dtl.day_idnt)||dtl.extended_sls_amt not in (select ecom.indiv_id||tm.day_idnt||ecom.FLFLL_NET_TTL_AMT from ua_ecom_order_dtl ecom inner join bopis bps on ecom.email = bps.email_addr_txt inner join ua_pos_tm_day tm on to_date(ecom.flfl
-group by sku.grp_desc
-order by bopis_sales desc;
+inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
+where ecom.order_id in (select order_id from bopis_orders)
+--and ecom.order_id in (select ecom.order_id from ua_ecom_order_dtl ecom inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt inner join bopis_orders bps on bps.order_id = ecom.order_id and sku.class_desc = '644 KEY ITEM WALL FRAMES');
 
-/*
-customer group data
-*/
+set define off;
+/*overall basket*/
+select 
+count(distinct ecom.indiv_id )                                            as customers,
+count(distinct ecom.order_id)                                            as orders,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
+where ecom.order_id in (select order_id from bopis_orders)
+and ecom.order_id in (select ecom.order_id from ua_ecom_order_dtl ecom inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt inner join bopis_orders bps on bps.order_id = ecom.order_id and sku.class_desc = '644 KEY ITEM WALL FRAMES');
+
+select
+count(distinct dtl.indiv_id )                                                  as customers,
+count(distinct dtl.pos_trans_key)                                      as trans,
+sum(dtl.extended_sls_amt)                                                 as sales,
+sum(dtl.qty)                                                                                as units
+from         ua_pos_trans_dtl dtl
+inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
+inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
+where dtl.wk_idnt between 201734 and 201813 
+and dtl.trans_typ_key in(19,22,33);
+         
+select
+sku.class_desc,
+count(distinct dtl.indiv_id )                                                  as customers,
+count(distinct dtl.pos_trans_key)                                      as trans,
+sum(dtl.extended_sls_amt)                                                 as sales,
+sum(dtl.qty)                                                                                as units
+from         ua_pos_trans_dtl dtl
+inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
+inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
+where dtl.wk_idnt between 201734 and 201813 
+and dtl.trans_typ_key in(19,22,33) 
+and sku.class_desc in ( '081 CRICUT', '061 CANVAS & SURFACES', '945 DISPLAY CASES', '001 CRAFT STORAGE', '644 KEY ITEM WALL FRAMES')
+group by sku.class_desc;
+
+select
+sku.class_desc,
+count(distinct dtl.indiv_id )                                                  as customers,
+count(distinct dtl.pos_trans_key)                                      as trans,
+sum(dtl.extended_sls_amt)                                                 as sales,
+sum(dtl.qty)                                                                                as units
+from         ua_pos_trans_dtl dtl
+inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
+inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
+where dtl.wk_idnt between 201734 and 201813 
+and dtl.trans_typ_key in(19,22,33) 
+and dtl.pos_trans_key in (
+      select 
+      dtl.pos_trans_key 
+      from ua_pos_trans_dtl dtl 
+      inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999' 
+      inner join ua_pos_prod_sku sku on dtl.sku_key = sku.sku_key 
+      where dtl.wk_idnt between 201734 and 201813 
+      and sku.class_desc in ( '061 CANVAS & SURFACES'))
+group by sku.class_desc
+order by sales desc;
+
+/*customer group data*/
 -------this year metrics-------
 DEFINE start_day_idnt = '2018001';
 DEFINE end_day_idnt = '2018080';
