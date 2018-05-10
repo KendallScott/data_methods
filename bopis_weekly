@@ -1,6 +1,18 @@
 
 DEFINE end_wk_idnt = '201812';
 
+/*overall orders*/
+ select
+        count(distinct ecom.indiv_id) as customers,
+        count(distinct ecom.order_id)                           as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between &end_wk_idnt and &end_wk_idnt
+        and ecom.order_id  in (select order_id from bopis_orders)
+        
+        
 select
 count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                                                                                                                                                   as customers,
 count(distinct stre.indiv_id)                                                                                                                                                                                                                                       as store_customers,
@@ -30,6 +42,7 @@ from (select
         and ecom. indiv_id not in (select distinct indiv_id from last_shop_bps  where last_shop <2017091 )
         and ecom.order_id  in (select order_id from bopis_orders)
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
+
 
     select
         count(distinct ecom.indiv_id) as bopis_customers,
