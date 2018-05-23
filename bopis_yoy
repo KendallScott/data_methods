@@ -1,0 +1,55 @@
+select
+count(distinct coalesce (stre.indiv_id, ecom.indiv_id))                                                                                                                                                    as customers,
+sum(stre.store_trans) as store_trans,
+sum(stre.store_sales) as store_sales,
+sum(ecom.ecom_trans) as ecom_trans,
+sum(ecom.ecom_sales) as ecom_sales
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                               as store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as store_gm,
+          sum(dtl.qty)                                            as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between 201812 and 201815  and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between 201812 and 201815 
+         and ecom.order_id not  in (select order_id from bopis_orders)
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
+        
+select
+count(distinct coalesce (stre.indiv_id, ecom.indiv_id))                                                                                                                                                    as customers,
+sum(stre.store_trans) as store_trans,
+sum(stre.store_sales) as store_sales,
+sum(ecom.ecom_trans) as ecom_trans,
+sum(ecom.ecom_sales) as ecom_sales
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                               as store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as store_gm,
+          sum(dtl.qty)                                            as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between 201712 and 201715  and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between 201712 and 201715 
+         --and ecom.order_id not  in (select order_id from bopis_orders)
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
