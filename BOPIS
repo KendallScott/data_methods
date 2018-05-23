@@ -790,3 +790,14 @@ and dtl.indiv_id||(tm.day_dt)||dtl.extended_sls_amt not in (
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt 
         where tm.wk_idnt between 201812 and 201813);
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+select 
+sku.sku_desc,
+count(distinct ecom.indiv_id )                                            as customers,
+count(distinct ecom.order_id)                                            as orders,
+sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
+sum(ecom.flfll_unit_cnt)                                                      as bopis_units
+from ua_ecom_order_dtl ecom
+inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
+where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201815)
+group by sku.sku_desc
+order by bopis_units desc
