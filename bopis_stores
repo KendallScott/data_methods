@@ -1,0 +1,56 @@
+select * from bopis_survey where rownum <99
+
+create table bopis_stores_next_day as
+select
+email_address,
+loc_idnt, 
+loc_desc
+from ua_pos_trans_dtl dtl 
+inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt!='999'
+inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
+inner join ua_email_ref rf on rf.indiv_id = dtl.indiv_id  and rf.pref_indiv_em_flg = 'Y' and rf.valid_email_mktg_flg = 'Y'
+inner join ua_email email on email.email_id = rf.email_id
+inner join bopis_survey bopis on email.email_addr_txt = bopis.email_address
+where dtl.indiv_id||(tm.day_dt+1)||dtl.extended_sls_amt in (
+        select ecom.indiv_id||tm.day_dt||ecom.FLFLL_NET_TTL_AMT 
+        from ua_ecom_order_dtl ecom 
+        inner join bopis_orders bps on bps.indiv_id =ecom.indiv_id  
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt ) ;
+                                                                                                                                           select * from ua_store where rownum <99
+
+create table bopis_stores_same_day as
+select
+email_address,
+loc_idnt, 
+loc_desc
+from ua_pos_trans_dtl dtl 
+inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt!='999'
+inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
+inner join ua_email_ref rf on rf.indiv_id = dtl.indiv_id  and rf.pref_indiv_em_flg = 'Y' and rf.valid_email_mktg_flg = 'Y'
+inner join ua_email email on email.email_id = rf.email_id
+inner join bopis_survey bopis on email.email_addr_txt = bopis.email_address
+where dtl.indiv_id||(tm.day_dt)||dtl.extended_sls_amt in (
+        select ecom.indiv_id||tm.day_dt||ecom.FLFLL_NET_TTL_AMT 
+        from ua_ecom_order_dtl ecom 
+        inner join bopis_orders bps on bps.indiv_id =ecom.indiv_id  
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt ) ;
+    
+create table bopis_stores as       
+select
+coalesce(sd.email_address, nd.email_address) as email_address,
+coalesce(sd.loc_idnt, nd.loc_idnt) as loc_idnt,
+coalesce(sd.loc_desc, nd.loc_desc) as loc_desc
+from bopis_stores_same_day sd
+full outer join bopis_stores_next_day nd on sd.email_address = nd.email_address
+
+create table bopis_store as
+select 
+distinct
+email_address,
+loc_idnt,
+loc_desc
+from bopis_stores 
+
+select * from bopis_store where rownum <88
+
+grant select on bopis_store to public;
