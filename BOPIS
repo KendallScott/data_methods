@@ -406,6 +406,14 @@ from
 from ua_pos_tm_day where wk_idnt = &end_wk_idnt)
 );
 
+drop table rolling12trans_&mth;
+drop table timeframe_&mth;
+drop table last_shop_excl_&mth;
+drop table new_cust_&mth;
+drop table react_cust_&mth; 
+drop table new_react_cust_&mth;
+drop table cust_groups_&mth;
+
 create table rolling12trans_&mth as
 select
 coalesce(stre.indiv_id, ecom.indiv_id)                                                                                                                                                                                                                 as indiv_id,
@@ -424,7 +432,7 @@ from (select
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          where dtl.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-         and dtl. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201813)
+         --and dtl. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201816)
         group by dtl.indiv_id) stre
     full outer join(
     select
@@ -435,7 +443,7 @@ from (select
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
         where tm.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt
-        and ecom. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201813)
+        --and ecom. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201816)
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
@@ -458,7 +466,6 @@ from (select
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-         and dtl. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201813)
         group by dtl.indiv_id) stre
     full outer join(
     select
@@ -469,7 +476,6 @@ from (select
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
-        and ecom. indiv_id in (select indiv_id from bopis_orders where wk_idnt between 201812 and 201813)
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
@@ -478,13 +484,13 @@ select
        dtl.indiv_id,
        max(dtl.day_idnt) as last_shop
     from ua_pos_trans_dtl dtl inner join ua_store str on dtl.loc_key = str.loc_key
-    inner join timeframe_&mth mth on dtl.indiv_id = mth.indiv_id
+   -- inner join bopis_orders mth on dtl.indiv_id = mth.indiv_id
     where dtl.wk_idnt < &start_wk_idnt and dtl.trans_typ_key in(19,22,33) group by dtl.indiv_id;
 
 create table new_cust_&mth as
   select            
   distinct (indiv_id)     
-  from timeframe_&mth
+  from  timeframe_&mth
   where indiv_id not in (select distinct indiv_id from last_shop_excl_&mth);
 
 create table react_cust_&mth as
@@ -517,7 +523,8 @@ count(distinct cust.indiv_id),
 cust.custgroup
 from cust_groups_&mth  cust
 --inner join bopis_orders bps on bps.indiv_id = cust.indiv_id
---where indiv_id  in (select indiv_id from bopis_orders)
+where indiv_id not in (select indiv_id from bopis_orders where wk_idnt between &start_wk_idnt and &end_wk_idnt)
+and indiv_id in (select indiv_id from timeframe_&mth)
 group by cust.custgroup
 
 
