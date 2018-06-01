@@ -30,6 +30,7 @@ app.page,
 count(distinct session_id)                                              as id_sessions
 from ua_crmt_ma_page_view app
 where indiv_id is not null
+and app.storeid is not null
 group by app.page
 order by id_sessions desc;
 
@@ -46,6 +47,29 @@ inner  join ua_store str on str.loc_key = dtl.loc_key )
 group by app.page
 order by shopping_sessions desc;
 
+select 
+count(distinct session_id)                                              as sessions
+from ua_crmt_ma_page_view app
+order by sessions desc;
+
+select 
+count(distinct session_id)                                              as id_sessions
+from ua_crmt_ma_page_view app
+where indiv_id is not null
+and app.storeid is not null
+order by id_sessions desc;
+
+select 
+count(distinct session_id)                                              as shopping_sessions
+from ua_crmt_ma_page_view app
+where indiv_id||to_date(timestamp)||storeid in 
+(select
+dtl.indiv_id||tm.day_dt||str.loc_idnt
+from ua_pos_trans_dtl dtl
+inner join ua_pos_tm_day tm on  dtl.day_idnt = tm.day_idnt
+inner  join ua_store str on str.loc_key = dtl.loc_key )
+order by shopping_sessions desc;
+
 select * from ua_crmt_ma_page_view where rownum < 100
 
 
@@ -60,8 +84,8 @@ round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
 from distinct_app_data app
 inner join ua_pos_tm_day tm            on  to_date(app.day_dt)= tm.day_dt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
-inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
-where app.storeid is not null
+--inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
+--where app.storeid is not null
 group by app.page
 order by sales desc;
 
