@@ -89,6 +89,30 @@ inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.da
 group by app.page
 order by sales desc;
 
+select 
+count(distinct dtl.indiv_id)                                                                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                                                                 as trans,
+sum(dtl.extended_sls_amt)                                                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                                                     as gm,
+sum(dtl.qty)                                                                                                                            as units,
+round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
+from distinct_app_data_overall app
+inner join ua_pos_tm_day tm            on  to_date(app.day_dt)= tm.day_dt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+--inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
+--where app.storeid is not null
+order by sales desc;
+
+create table distinct_app_data_overall as
+select
+distinct
+app.indiv_id,
+app.storeid,
+tm.day_dt
+from ua_crmt_ma_page_view app
+inner join ua_pos_tm_day tm on  to_date(app.timestamp)= tm.day_dt
+group by app.indiv_id, app.storeid, tm.day_dt;
+
 product pages
 'FLORAL'
 'ACCENTS & CONTAINERS'
