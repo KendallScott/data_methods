@@ -1,0 +1,135 @@
+
+select 
+app.page,
+count(distinct session_id)                                              as sessions
+from ua_crmt_ma_page_view app
+group by app.page
+order by sessions desc;
+
+drop table distinct_app_data;
+
+create table distinct_app_data as
+select
+distinct
+app.indiv_id,
+app.page,
+app.storeid,
+app.timestamp,
+max(page.pages) as pages
+from ua_crmt_ma_page_view app
+inner join (select
+indiv_id,
+count(distinct page) as pages,
+timestamp
+from ua_crmt_ma_page_view app
+where indiv_id is not null
+group by indiv_id, timestamp ) page on page.indiv_id = app.indiv_id and page.timestamp= app.timestamp 
+group by app.indiv_id, app.page, app.storeid, app.timestamp
+
+select
+count(distinct indiv_id) as customers
+from (
+select 
+timestamp,
+indiv_id, 
+count(page) as pages,
+count(distinct page) as distinct_pages
+from  distinct_app_data
+group by indiv_id, timestamp)
+where pages!=distinct_pages
+
+select * from distinct_app_data where rownum <55
+
+where rownum <100
+
+
+select * from ua_crmt_ma_page_view where rownum <100
+
+select 
+app.page,
+sum(app.pages) as number_pages,
+  count(distinct dtl.indiv_id)                                                                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                                                                 as trans,
+sum(dtl.extended_sls_amt)                                                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                                                     as gm,
+sum(dtl.qty)                                                                                                                            as units,
+round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
+from distinct_app_data app
+inner join ua_pos_tm_day tm            on  to_date(app.timestamp)= tm.day_dt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
+where app.storeid is not null
+group by app.page
+order by sales desc;
+
+select 
+app.page,
+count(distinct session_id)                                              as sessions,
+count(distinct dtl.indiv_id)                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                as trans,
+sum(dtl.extended_sls_amt)                                          as sales,
+sum(dtl.grs_mrgn_amt)                                                   as gm,
+sum(dtl.qty)                                                                         as units 
+from ua_crmt_ma_page_view app
+inner join ua_pos_tm_day tm            on  to_date(app.timestamp)= tm.day_dt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
+where app.storeid is not null
+group by app.page
+order by sessions desc;
+
+
+'FLORAL'
+'ACCENTS & CONTAINERS'
+'CUSTOM FLORAL'
+'STORE EVENTS & AS IS'
+'SCRAPBOOKING'
+'15 CUSTOM FRAMING'
+'PAPERCRAFTING'
+'BALANCING'
+'CUSTOM FRAMING'
+'MINI SEASON'
+'PACKAGING & PARTY'
+'APPAREL CRAFTS'
+'REGIONAL MERCHANDISI'
+'UNFINISHED SURFACES'
+'ART SUPPLIES'
+'IMPULSE'
+'PAINT & DECO ART'
+'CHRISTMAS'
+'RIBBON &  WEDDING'
+'JEWELRY & BEADS'
+'NEEDLE CRAFTS'
+'HOME ACCENTS'
+'WOOD CRAFTS'
+'TECH & MARTHA STEWAR'
+'FOOD CRAFT'
+'FRAMES & WALL DECOR'
+'CANDLES'
+'BOOKS & MAGAZINES'
+'KIDS CRAFTS'
+'NOT IN USE'
+'CELEBRATIONS'
+
+select
+* 
+from ua_crmt_ma_page_view app
+inner join ua_pos_tm_day tm            on  to_date(app.timestamp)= tm.day_dt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
+
+select * from unica.ua_crmt_ma_cart_activity where rownum <100
+select * from unica.ua_crmt_ma_conv_event where rownum <100
+select * from unica.ua_crmt_ma_element where rownum <100
+select * from unica.ua_crmt_ma_mktng_channel where rownum <100
+select * from unica.ua_crmt_ma_order where rownum <100 
+select * from unica.ua_crmt_ma_product_view where rownum <100
+select * from unica.ua_crmt_ma_session_sum where rownum <100
+select * from unica.ua_crmt_ma_site_promo_click where rownum <100
+
+select
+* 
+from ua_crmt_ma_page_view app
+inner join ua_pos_tm_day tm            on  to_date(app.timestamp)= tm.day_dt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt
