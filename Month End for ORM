@@ -1,10 +1,10 @@
 set worksheetname agg_tables;
 -------this year metrics-------
-DEFINE start_day_idnt = '2018064';
-DEFINE end_day_idnt = '2018091';
-DEFINE start_wk_idnt = '201810';
-DEFINE end_wk_idnt = '201813';
-DEFINE mth = 'APR';
+DEFINE start_day_idnt = '2018092';
+DEFINE end_day_idnt = '2018119';
+DEFINE start_wk_idnt = '201814';
+DEFINE end_wk_idnt = '201817';
+DEFINE mth = 'MAY';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -36,7 +36,6 @@ from (select
         where tm.day_idnt between  (&end_day_idnt - 2000 + 1) and &end_day_idnt
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
-drop table rolling12trans_&mth
 
 --rolling12 
 create table rolling12trans_&mth as
