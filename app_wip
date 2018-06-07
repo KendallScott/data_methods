@@ -1,5 +1,50 @@
-select 
+drop table distinct_app_data_b;
+drop table distinct_app_page_data_b;
+
+create table distinct_app_data_b as
+select eref.indiv_id, 
+pv.storeid, 
 tm.wk_idnt,
+tm.day_idnt
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+group by eref.indiv_id, pv.storeid,  tm.wk_idnt, tm.day_idnt;
+
+create table distinct_app_page_data_b as
+select 
+pv.page,
+eref.indiv_id, 
+pv.storeid, 
+tm.wk_idnt,
+tm.day_idnt
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+group by pv.page, eref.indiv_id, pv.storeid,  tm.wk_idnt, tm.day_idnt;
+
+
+/*by page*/
+select 
+app.page,
+count(distinct dtl.indiv_id)                                                                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                                                                 as trans,
+sum(dtl.extended_sls_amt)                                                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                                                     as gm,
+sum(dtl.qty)                                                                                                                            as units,
+round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
+from distinct_app_page_data_b app
+inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
+where tm.wk_idnt between 201814 and 201817
+group by app.page
+order by sales desc;
+
+/*total*/
+select 
 count(distinct dtl.indiv_id)                                                                                             as cust_count,
 count(distinct dtl.pos_trans_key)                                                                                 as trans,
 sum(dtl.extended_sls_amt)                                                                                            as sales,
@@ -11,36 +56,17 @@ inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt and str.distt_idnt != '999'
 where tm.wk_idnt between 201814 and 201817
-group by tm.wk_idnt
-order by tm.wk_idnt asc;
+order by sales desc;
 
+/*overall sessions*/
 select 
-wk_idnt,
-count(distinct session_id)                                              as sessions
+count(distinct session_id) as sessions
 from ua_crmt_ma_page_view app
-where wk_idnt between 201814 and 201817
-group by wk_idnt
-order by wk_idnt asc;
+inner join ua_pos_tm_day tm            on  trunc(app.timestamp) = tm.day_dt
+where tm.wk_idnt between 201814 and 201817
+order by sessions desc;
 
-select 
-count(distinct session_id)                                              as sessions
-from ua_crmt_ma_page_view app
-where wk_idnt between 201814 and 201817;
-
-select 
-wk_idnt,
-count(distinct session_id)                                              as id_sessions
-from ua_crmt_ma_page_view app
-where session_id in (
-select session_id
-from unica.ua_crmt_ma_page_view pv
-inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
-inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
-inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where pv.wk_idnt between 201814 and 201817)
-group by wk_idnt
-order by wk_idnt asc;
-
+/* sessions by page */
 select 
 app.page,
 count(distinct session_id)                                              as sessions
@@ -50,7 +76,41 @@ group by app.page
 order by sessions desc;
 
 select 
-page,
+app.page,
+count(distinct session_id)                                              as id_sessions
+from ua_crmt_ma_page_view app
+where wk_idnt between 201814 and 201817
+and session_id in (
+select session_id
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+where pv.wk_idnt between 201814 and 201817)
+group by app.page
+order by id_sessions desc;
+
+select 
+count(distinct session_id)                                              as id_sessions
+from ua_crmt_ma_page_view app
+where session_id in (
+select session_id
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+where pv.wk_idnt between 201814 and 201817);
+
+select 
+wk_idnt,
+count(distinct session_id)                                              as sessions
+from ua_crmt_ma_page_view app
+where wk_idnt between 201814 and 201817
+group by wk_idnt
+order by wk_idnt asc;
+
+select 
+wk_idnt,
 count(distinct session_id)                                              as id_sessions
 from ua_crmt_ma_page_view app
 where session_id in (
@@ -60,5 +120,14 @@ inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
 where pv.wk_idnt between 201814 and 201817)
-group by page
-order by id_sessions desc;
+group by wk_idnt
+order by wk_idnt asc;
+
+select * from unica.ua_crmt_ma_cart_activity where rownum <100
+select * from unica.ua_crmt_ma_conv_event where rownum <100
+select * from unica.ua_crmt_ma_element where rownum <100
+select * from unica.ua_crmt_ma_mktng_channel where rownum <100
+select * from unica.ua_crmt_ma_order where rownum <100 
+select * from unica.ua_crmt_ma_product_view where rownum <100
+select * from unica.ua_crmt_ma_session_sum where rownum <100
+select * from unica.ua_crmt_ma_site_promo_click where rownum <100
