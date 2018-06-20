@@ -25,84 +25,12 @@ group by ecom.indiv_id;
 
 /*overall numbers*/
 select
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-where order_id in (select order_id from bopis_orders);
-
-
-select * from bopis_orders where rownum <77
-
-select 
-count(distinct
-from bopis bps
-inner join ua_pos_tm_day tm on bps.pickup_date = tm.day_dt
-
-select * from ua_pos_tm_day where rownum <55
-
-
-
-/*get date range for orders*/
-select
-min(day_dt),
-max(day_dt)
-from bopis_orders
-
-drop table bopis_days;
-/*bopis days*/
-create table bopis_days as
-select
-ecom.indiv_id,
-min(tm.day_dt) as first_purchase
-from ua_ecom_order_dtl ecom
-inner join bopis bps on substr(bps.order_id, 0, 10) = substr(ecom.order_id, 4, 10)
-inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
-group by ecom.indiv_id;
-
-/*overall numbers*/
-select
 count(distinct ecom.indiv_id )                                           as customers,
 count(distinct ecom.order_id)                                            as orders,
 sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
 where order_id in (select order_id from bopis_orders bps inner join bopis_days days on days. indiv_id = bps.indiv_id where days.first_purchase < '27-APR-18');
-
-/*30 days prior to bopis order
-update  bps.first_purchase date to have a 30 day window of sales after
-*/
-/*30 days prior to bopis order*/
-select
-count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                    as customers, 
-sum((coalesce(stre.store_trans, 0)) +  coalesce(ecom.ecom_trans, 0))                     as trans,
-sum((coalesce(stre.store_sales, 0)) + coalesce(ecom.ecom_sales, 0))                      as sales,
-sum((coalesce(stre.store_units, 0)) + coalesce(ecom.ecom_units, 0))                      as units
-from (
-select
-        dtl.indiv_id, 
-        count(distinct dtl.pos_trans_key) as store_trans,
-        sum(dtl.extended_sls_amt) as store_sales,
-        sum(dtl.grs_mrgn_amt) as store_gm,
-        sum(dtl.qty) as store_units
-        from ua_pos_trans_dtl dtl 
-        inner join ua_store str on dtl.loc_key = str.loc_key
-        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '27-APR-18'
-        inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
-        where tm.day_dt between bps.first_purchase-31 and bps.first_purchase-1 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
-        group by dtl.indiv_id) stre
-full outer join (
-        select
-        ecom.indiv_id,
-        count(distinct ecom.order_id) as  ecom_trans,
-        sum(ecom.flfll_net_ttl_amt) as ecom_sales,
-        sum(ecom.flfll_unit_cnt) as ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <'27-APR-18'
-        where tm.day_dt between bps.first_purchase-31 and bps.first_purchase-1
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
 /*30 days after bopis order*/
 select
@@ -198,114 +126,7 @@ full outer join (
         where tm.day_dt between  bps.first_purchase-365 +3 and bps.first_purchase-365 +33 
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
-
-DEFINE start_wk_idnt = '201712';
-DEFINE end_wk_idnt = '201716';
-
-DEFINE start_wk_idnt = '201812';
-DEFINE end_wk_idnt = '201816';
-/* weekly customer numbers */
-select
-coalesce(stre.wk_idnt, ecom.wk_idnt)                                                                                                                                                                                                           as wk_idnt,
-count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                                                                                                                                            as customers,
-count(distinct stre.indiv_id)                                                                                                                                                                                                                                as store_customers,
-count(distinct ecom.indiv_id)                                                                                                                                                                                                                             as ecom_customers,
-sum(store_sales)                                                                                                                                                                                                                                                      as store_sales,
-sum(ecom_sales)                                                                                                                                                                                                                                                      as ecom_sales,
-sum(store_trans)                                                                                                                                                                                                                                                       as store_trans,
-sum(ecom_trans)                                                                                                                                                                                                                                                       as ecom_trans
-from (select
-          dtl.wk_idnt,
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                       as store_trans,
-          sum(dtl.extended_sls_amt)                                  as store_sales,
-          sum(dtl.grs_mrgn_amt)                                           as store_gm,
-          sum(dtl.qty)                                                                 as store_units
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-        group by dtl.indiv_id, dtl.wk_idnt) stre
-    full outer join(
-    select
-        tm.wk_idnt,
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                           as ecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
-        sum(ecom.flfll_unit_cnt)                                as ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
-        and ecom.order_id   in (select order_id from bopis_orders)
-        /*change to "not in" to look at non-bopis orders*/
-        group by ecom.indiv_id, tm.wk_idnt) ecom on stre.indiv_id = ecom.indiv_id and stre.wk_idnt = ecom.wk_idnt
-        group by coalesce(stre.wk_idnt, ecom.wk_idnt)
-        order by  coalesce(stre.wk_idnt, ecom.wk_idnt) asc ;
- /* overall customer numbers */       
-select
-count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                                                                                                                                                     as customers,
-count(distinct stre.indiv_id)                                                                                                                                                                                                                                         as store_customers,
-count(distinct ecom.indiv_id)                                                                                                                                                                                                                                     as ecom_customers,
-sum(store_trans)                                                                                                                                                                                                                                                              as store_trans,
-sum(ecom_trans)                                                                                                                                                                                                                                                              as ecom_trans,
-sum(store_sales)                                                                                                                                                                                                                                                              as store_sales,
-sum(ecom_sales)                                                                                                                                                                                                                                                              as ecom_sales
-from (select
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                       as store_trans,
-          sum(dtl.extended_sls_amt)                                  as store_sales,
-          sum(dtl.grs_mrgn_amt)                                           as store_gm,
-          sum(dtl.qty)                                                                  as store_units
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-        group by dtl.indiv_id) stre
-    full outer join(
-    select
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                             as ecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                                as ecom_sales,
-        sum(ecom.flfll_unit_cnt)                                       as ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
-        and ecom.order_id  not  in (select order_id from bopis_orders)
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id ;
-        
-        
-/*weekly bopis numbers*/
-select
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
-where order_id in (select order_id from bopis_orders bps  )
-and tm.wk_idnt between &start_wk_idnt and &end_wk_idnt;
-
-select
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
-where order_id in (select ord.order_id from bopis_orders ord inner join bopis_days bps on ord.indiv_id = bps.indiv_id  and bps.first_purchase = ord.day_dt and bps.first_purchase < '27-APR-18');
-
-
-/*basket analysis*/
-select 
-sku.grp_desc,
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders where wk_idnt between &start_wk_idnt and &end_wk_idnt)
-group by sku.grp_desc
-order by bopis_sales desc;
-
+/*sku description */
 select 
 sku.sku_desc,
 count(distinct ecom.indiv_id )                                            as customers,
@@ -318,6 +139,7 @@ where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 
 group by sku.sku_desc
 order by bopis_units desc;
 
+/* product group level */
 select 
 sku.grp_desc,
 count(distinct ecom.indiv_id )                                            as customers,
@@ -329,79 +151,6 @@ inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
 where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201819)
 group by sku.grp_desc
 order by bopis_units desc;
-
-
-select 
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders)
---and ecom.order_id in (select ecom.order_id from ua_ecom_order_dtl ecom inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt inner join bopis_orders bps on bps.order_id = ecom.order_id and sku.class_desc = '644 KEY ITEM WALL FRAMES');
-
-set define off;
-/*overall basket*/
-select 
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders)
-and ecom.order_id in (select ecom.order_id from ua_ecom_order_dtl ecom inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt inner join bopis_orders bps on bps.order_id = ecom.order_id and sku.class_desc = '644 KEY ITEM WALL FRAMES');
-
-select
-count(distinct dtl.indiv_id )                                                  as customers,
-count(distinct dtl.pos_trans_key)                                      as trans,
-sum(dtl.extended_sls_amt)                                                 as sales,
-sum(dtl.qty)                                                                                as units
-from         ua_pos_trans_dtl dtl
-inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
-inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
-where dtl.wk_idnt between 201734 and 201813 
-and dtl.trans_typ_key in(19,22,33);
-
-select
-sku.class_desc,
-count(distinct dtl.indiv_id )                                                  as customers,
-count(distinct dtl.pos_trans_key)                                      as trans,
-sum(dtl.extended_sls_amt)                                                 as sales,
-sum(dtl.qty)                                                                                as units
-from         ua_pos_trans_dtl dtl
-inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
-inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
-where dtl.wk_idnt between 201734 and 201813 
-and dtl.trans_typ_key in(19,22,33) 
-and sku.class_desc in ( '081 CRICUT', '061 CANVAS & SURFACES', '945 DISPLAY CASES', '001 CRAFT STORAGE', '644 KEY ITEM WALL FRAMES')
-group by sku.class_desc;
-set define off
-
-
-select
-sku.class_desc,
-count(distinct dtl.indiv_id )                                                  as customers,
-count(distinct dtl.pos_trans_key)                                      as trans,
-sum(dtl.extended_sls_amt)                                                 as sales,
-sum(dtl.qty)                                                                                as units
-from         ua_pos_trans_dtl dtl
-inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999'
-inner join ua_pos_prod_sku sku on dtl.sku_key=sku.sku_key
-where dtl.wk_idnt between 201734 and 201813 
-and dtl.trans_typ_key in(19,22,33) 
-and dtl.pos_trans_key in (
-      select 
-      dtl.pos_trans_key 
-      from ua_pos_trans_dtl dtl 
-      inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt != '999' 
-      inner join ua_pos_prod_sku sku on dtl.sku_key = sku.sku_key 
-      where dtl.wk_idnt between 201734 and 201813 
-      and sku.class_desc in ( '061 CANVAS & SURFACES'))
-group by sku.class_desc
-order by sales desc;
-
 
 /*overall bopis*/
 select
@@ -415,35 +164,6 @@ where order_id in (select order_id from bopis_orders)
 and tm.wk_idnt between 201812 and 201819;
 
 /*store purchases*/
-select
-count(distinct coalesce (stre.indiv_id, ecom.indiv_id))                                                                                                                                                       as customers,
-sum( (coalesce(stre.store_trans,0))+ (coalesce(ecom.ecom_trans, 0)) )                                                                                                                    as trans,
-sum( (coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)) )                                                                                                                    as sales,
-sum( (coalesce(stre.store_units,0))+ (coalesce(ecom.ecom_units, 0)) )                                                                                                                    as units
-from (select
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                       as store_trans,
-          sum(dtl.extended_sls_amt)                               as store_sales,
-          sum(dtl.grs_mrgn_amt)                                   as store_gm,
-          sum(dtl.qty)                                            as store_units
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between 201812 and 201819 and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-         and dtl.indiv_id in (select indiv_id from bopis_orders)
-        group by dtl.indiv_id) stre
-    full outer join(
-    select
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                           as ecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
-        sum(ecom.flfll_unit_cnt)                                as ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.wk_idnt between 201801 and 201812 
-         and ecom.indiv_id in (select indiv_id from bopis_orders)
-         and ecom.order_id not in (select order_id from bopis_orders)
-        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
-
 select
 count(distinct  dtl.indiv_id)                                        as store_customers,
 count(distinct dtl.pos_trans_key)                            as store_trans,
@@ -465,60 +185,12 @@ and dtl.indiv_id||(tm.day_dt)||dtl.extended_sls_amt not in (
         inner join bopis_orders bps on bps.indiv_id =ecom.indiv_id  
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt 
         where tm.wk_idnt between 201812 and 201819);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-select 
-sku.sku_desc,
-count(distinct ecom.indiv_id )                                            as customers,
-count(distinct ecom.order_id)                                            as orders,
-sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
-sum(ecom.flfll_unit_cnt)                                                      as bopis_units
-from ua_ecom_order_dtl ecom
-inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201819)
-group by sku.sku_desc
-order by bopis_units desc;
-
-DEFINE start_wk_idnt = '201812';
-DEFINE end_wk_idnt = '201813';
-/* weekly customer numbers */
-select
-coalesce(stre.wk_idnt, ecom.wk_idnt)                                                                                                                                                                                                                  as wk_idnt,
-count(distinct coalesce(stre.indiv_id, ecom.indiv_id))                                                                                                                                                                                   as customers,
-count(distinct stre.indiv_id)                                                                                                                                                                                                                                       as store_customers,
-count(distinct ecom.indiv_id)                                                                                                                                                                                                                                    as ecom_customers,
-sum(store_sales)                                                                                                                                                                                                                                                              as store_sales,
-sum(ecom_sales)                                                                                                                                                                                                                                                              as ecom_sales
-from (select
-          dtl.wk_idnt,
-          dtl.indiv_id,
-          count(distinct dtl.pos_trans_key)                       as store_trans,
-          sum(dtl.extended_sls_amt)                                  as store_sales,
-          sum(dtl.grs_mrgn_amt)                                           as store_gm,
-          sum(dtl.qty)                                                                 as store_units
-         from         ua_pos_trans_dtl dtl
-         inner join ua_store str on dtl.loc_key = str.loc_key
-         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
-        group by dtl.indiv_id, dtl.wk_idnt) stre
-    full outer join(
-    select
-        tm.wk_idnt,
-        ecom.indiv_id,
-        count(distinct ecom.order_id)                           as ecom_trans,
-        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
-        sum(ecom.flfll_unit_cnt)                                as ecom_units
-        from ua_ecom_order_dtl   ecom
-        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
-       -- and ecom. indiv_id not in (select distinct indiv_id from last_shop_bps  where last_shop <2017091 )
-       -- and ecom.order_id   in (select order_id from bopis_orders)
-        group by ecom.indiv_id, tm.wk_idnt) ecom on stre.indiv_id = ecom.indiv_id and stre.wk_idnt = ecom.wk_idnt
-        group by coalesce(stre.wk_idnt, ecom.wk_idnt)
-        order by  coalesce(stre.wk_idnt, ecom.wk_idnt) asc ;
-DEFINE start_wk_idnt = '201812';
-DEFINE end_wk_idnt = '201819';
 
 DEFINE start_wk_idnt = '201712';
 DEFINE end_wk_idnt = '201719';
+
+DEFINE start_wk_idnt = '201812';
+DEFINE end_wk_idnt = '201819';
 
 select
 count(distinct (coalesce(stre.indiv_id, ecom.indiv_id, bopis.indiv_id)))                                                                                                                                               as customers,
