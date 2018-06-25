@@ -2,7 +2,7 @@ select
 mth.monthly_customer_group,
 count(distinct mth.indiv_id) as customers
 from  month_cust_may mth
-where indiv_id not in (select indiv_id from weekly_emailed where wk_idnt between 201814 and 201817)
+where indiv_id not in (select indiv_id from weekly_emailed where wk_idnt between 201818 and 201820)
 and month_trans is not null
 group by monthly_customer_group
 
@@ -40,7 +40,7 @@ count(distinct app.session_id) as sessions
 from ua_crmt_ma_conv_event app
 inner join unica.ua_pos_tm_day tm on trunc(app.timestamp_1) = tm.day_dt
 where app.event_category = 'STORE VISIT' and app.event_name = 'BEACON'
-and tm.wk_idnt between 201814 and 201817;
+and tm.wk_idnt between 201818 and 201820;
 
 select 
 count(distinct session_id)                                              as id_sessions
@@ -51,11 +51,11 @@ from unica.ua_crmt_ma_page_view pv
 inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where pv.wk_idnt between 201814 and 201817)
+where pv.wk_idnt between 201818 and 201820)
 and session_id in (select session_id from  ua_crmt_ma_conv_event app
 inner join unica.ua_pos_tm_day tm on trunc(app.timestamp_1) = tm.day_dt
 where app.event_category = 'STORE VISIT' and app.event_name = 'BEACON'
-and tm.wk_idnt between 201814 and 201817);
+and tm.wk_idnt between 201818 and 201820);
 
 /*store visit*/
 select 
@@ -69,7 +69,7 @@ from distinct_app_data_store_visit app
 inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt and str.distt_idnt != '999'
-where tm.wk_idnt between 201814 and 201817
+where tm.wk_idnt between 201818 and 201820
 order by sales desc;
 
 
@@ -102,7 +102,7 @@ from distinct_app_page_data_b app
 inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
-where tm.wk_idnt between 201814 and 201817
+where tm.wk_idnt between 201818 and 201820
 group by app.page
 order by sales desc;
 
@@ -118,8 +118,21 @@ from distinct_app_data_b app
 inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt and str.distt_idnt != '999'
-where tm.wk_idnt between 201814 and 201817
+where tm.wk_idnt between 201818 and 201820
 order by sales desc;
+
+select 
+count(distinct dtl.indiv_id)                                                                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                                                                 as trans,
+sum(dtl.extended_sls_amt)                                                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                                                     as gm,
+sum(dtl.qty)                                                                                                                            as units,
+round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
+from  ua_pos_trans_dtl dtl    
+inner join ua_pos_tm_day tm            on  dtl.day_idnt= tm.day_idnt
+inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
+where tm.wk_idnt between 201818 and 201820 and dtl.trans_typ_key in (19,22,33);
+
 
 select * from month_cust_may where rownum <100
 
@@ -137,7 +150,7 @@ select * from month_cust_may where rownum <100
   inner join ua_pos_trans_dtl dtl          on app.indiv_id = dtl.indiv_id  and dtl.trans_typ_key in (19,22,33)
   inner join  month_cust_may mth      on mth.indiv_id = app.indiv_id
   --inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt and str.distt_idnt != '999'
-  where tm.wk_idnt between 201814 and 201817;
+  where tm.wk_idnt between 201818 and 201820;
   
     select 
   count(distinct dtl.indiv_id)                                                                                             as cust_count,
@@ -147,7 +160,7 @@ select * from month_cust_may where rownum <100
   sum(dtl.qty)                                                                                                                            as units,
   round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
  from  ua_pos_trans_dtl dtl         
-  where dtl.wk_idnt between 201814 and 201817  and dtl.trans_typ_key in (19,22,33)
+  where dtl.wk_idnt between 201818 and 201820  and dtl.trans_typ_key in (19,22,33)
 
 
 select 
@@ -160,13 +173,13 @@ round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
 from month_cust_may mth
 inner join ua_pos_trans_dtl dtl          on mth.indiv_id = dtl.indiv_id  and  dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
-where dtl.wk_idnt between 201814 and 201817
-and dtl.indiv_id  in (select app.indiv_id from distinct_app_data_b app where wk_idnt between 201814 and 201817)
+where dtl.wk_idnt between 201818 and 201820
+and dtl.indiv_id  in (select app.indiv_id from distinct_app_data_b app where wk_idnt between 201818 and 201820)
 and dtl.indiv_id not in (select app.indiv_id from distinct_app_data_store_visit app
 inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
 inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and app.storeid = str.loc_idnt and str.distt_idnt != '999'
-where tm.wk_idnt between 201814 and 201817) ;
+where tm.wk_idnt between 201818 and 201820) ;
 
 select 
 mth.monthly_customer_group,
@@ -179,8 +192,8 @@ round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
 from month_cust_may mth
 inner join ua_pos_trans_dtl dtl          on mth.indiv_id = dtl.indiv_id  and  dtl.trans_typ_key in (19,22,33)
 inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
-where dtl.wk_idnt between 201814 and 201817
-and dtl.indiv_id  in (select app.indiv_id from distinct_app_data_b app where wk_idnt between 201814 and 201817)
+where dtl.wk_idnt between 201818 and 201820
+and dtl.indiv_id  in (select app.indiv_id from distinct_app_data_b app where wk_idnt between 201818 and 201820)
 group by mth.monthly_customer_group
 order by mth.monthly_customer_group ;
 
@@ -194,7 +207,7 @@ select
 count(distinct session_id) as sessions
 from ua_crmt_ma_page_view app
 inner join ua_pos_tm_day tm            on  trunc(app.timestamp) = tm.day_dt
-where tm.wk_idnt between 201814 and 201817
+where tm.wk_idnt between 201818 and 201820
 order by sessions desc;
 
 /* sessions by page */
@@ -202,7 +215,7 @@ select
 app.page,
 count(distinct session_id)                                              as sessions
 from ua_crmt_ma_page_view app
-where wk_idnt between 201814 and 201817
+where wk_idnt between 201818 and 201820
 group by app.page
 order by sessions desc;
 
@@ -210,14 +223,14 @@ select
 app.page,
 count(distinct session_id)                                              as id_sessions
 from ua_crmt_ma_page_view app
-where wk_idnt between 201814 and 201817
+where wk_idnt between 201818 and 201820
 and session_id in (
 select session_id
 from unica.ua_crmt_ma_page_view pv
 inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where pv.wk_idnt between 201814 and 201817)
+where pv.wk_idnt between 201818 and 201820)
 group by app.page
 order by id_sessions desc;
 
@@ -230,13 +243,13 @@ from unica.ua_crmt_ma_page_view pv
 inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where pv.wk_idnt between 201814 and 201817);
+where pv.wk_idnt between 201818 and 201820);
 
 select 
 wk_idnt,
 count(distinct session_id)                                              as sessions
 from ua_crmt_ma_page_view app
-where wk_idnt between 201814 and 201817
+where wk_idnt between 201818 and 201820
 group by wk_idnt
 order by wk_idnt asc;
 
@@ -250,7 +263,7 @@ from unica.ua_crmt_ma_page_view pv
 inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where pv.wk_idnt between 201814 and 201817)
+where pv.wk_idnt between 201818 and 201820)
 group by wk_idnt
 order by wk_idnt asc;
 
@@ -264,3 +277,61 @@ select * from unica.ua_crmt_ma_session_sum where rownum <100
 select * from unica.ua_crmt_ma_site_promo_click where rownum <100
 
 select session_id from ua_crmt_ma_conv_event where event_category = 'STORE VISIT'
+
+
+DEFINE start_wk_idnt = '201818';
+DEFINE end_wk_idnt = '201820';
+
+select
+count(distinct (coalesce(stre.indiv_id, ecom.indiv_id)))                                                                                                                                                                               as customers,
+count(distinct stre.indiv_id)                                                                                                                                                                                                                                       as store_customers,
+count(distinct ecom.indiv_id)                                                                                                                                                                                                                                    as ecom_customers,
+sum(store_trans) +sum(ecom_trans)                                                                                                                                                                                                                       as overall_trans
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                                  as store_sales,
+          sum(dtl.grs_mrgn_amt)                                           as store_gm,
+          sum(dtl.qty)                                                                  as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join (
+      select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                             as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                                as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                       as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id ;
+        
+select
+count(distinct (coalesce(stre.indiv_id, ecom.indiv_id)))                                                                                                                                                                               as customers,
+count(distinct stre.indiv_id)                                                                                                                                                                                                                                       as store_customers,
+count(distinct ecom.indiv_id)                                                                                                                                                                                                                                    as ecom_customers,
+sum(store_trans) +sum(ecom_trans)                                                                                                                                                                                                                       as overall_trans
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                                  as store_sales,
+          sum(dtl.grs_mrgn_amt)                                           as store_gm,
+          sum(dtl.qty)                                                                  as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         inner join distinct_app_data_b app on app.indiv_id = dtl.indiv_id and app.day_idnt = dtl.day_idnt
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join (
+      select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                             as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                                as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                       as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join distinct_app_data_b app on app.indiv_id = ecom.indiv_id and app.day_idnt = tm.day_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id ;        
