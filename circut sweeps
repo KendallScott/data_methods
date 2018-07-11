@@ -1,0 +1,57 @@
+select * from cricut_sweeps where rownum <100
+
+create table cricut_sweeps_customers as
+select 
+distinct rf.indiv_id
+from cricut_sweeps cs
+inner join unica.ua_email em on cs.email_address=em.email_addr_txt
+inner join unica.ua_email_ref rf on em.email_id=rf.email_id and rf.pref_indiv_em_flg='Y';
+
+210805 and 201812
+201813
+201814 and 201821
+
+-----Start ROCK code-----
+DEFINE start_wk_idnt = '201809';
+DEFINE end_wk_idnt = '201812';
+
+DEFINE start_wk_idnt = '201814';
+DEFINE end_wk_idnt = '201817';
+
+set worksheetname incremental_email_&week;
+
+select * from cricut_sweeps_customers where rownum < 100
+
+
+SELECT 
+count(distinct cricut.indiv_id)                                                                                                                                                                                                                 as emailed_customers,
+count(distinct(coalesce (stre.indiv_id, ecom.indiv_id)))                                                                                                                                                             as shopping_customers,
+sum((coalesce(stre.store_trans,0))+ (coalesce(ecom.ecom_trans, 0)))                                                                                                                                 as trans,
+sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))                                                                                                                                 as sales,
+(round(sum(stre.store_gm)/sum(stre.store_sales), 4)) *   sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))            as gm
+from  cricut_sweeps_customers  cricut
+left join (
+          select
+          cricut.indiv_id,
+          count(distinct dtl.pos_trans_key)                   as store_trans,
+          sum(dtl.extended_sls_amt)                              as store_sales,
+          sum(dtl.grs_mrgn_amt)                                       as store_gm,
+          sum(dtl.qty)                                                              as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+        inner join ua_pos_tm_day tm on dtl.day_idnt= tm.day_idnt
+         inner join  cricut_sweeps_customers  cricut  on dtl.indiv_id = cricut.indiv_id 
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+          and str.loc_cntry_desc = 'USA'
+        group by cricut.indiv_id)stre on cricut.indiv_id = stre.indiv_id 
+   left join(
+    select
+        cricut.indiv_id,
+        count(distinct ecom.order_id)                         as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                            as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                    as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+         inner join  cricut_sweeps_customers  cricut  on ecom.indiv_id = cricut.indiv_id 
+        where tm.wk_idnt between  &start_wk_idnt and &end_wk_idnt
+        group by cricut.indiv_id) ecom on cricut.indiv_id = ecom.indiv_id;
