@@ -1,10 +1,10 @@
 set worksheetname agg_tables;
 -------this year metrics-------
-DEFINE start_day_idnt = '2018092';
-DEFINE end_day_idnt = '2018119';
-DEFINE start_wk_idnt = '201814';
-DEFINE end_wk_idnt = '201817';
-DEFINE mth = 'MAY';
+DEFINE start_day_idnt = '2018120';
+DEFINE end_day_idnt = '2018154';
+DEFINE start_wk_idnt = '201818';
+DEFINE end_wk_idnt = '201822';
+DEFINE mth = 'JUNE';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -144,9 +144,9 @@ create table cust_groups_&mth as
 
 select
 count(distinct indiv_id),
-custgroup_month
-from cust_groups_month_&mth
-group by custgroup_month
+custgroup
+from cust_groups_&mth
+group by custgroup
 
 /*
 use the below definitions and rerun code above
@@ -155,12 +155,15 @@ use the below definitions and rerun code above
                                                  |
                                                  |
 */
+set worksheetname agg_tables_LY;
 -------last year metrics-------
-DEFINE start_day_idnt = '2017064';
-DEFINE end_day_idnt = '2017091';
-DEFINE start_wk_idnt = '201710';
-DEFINE end_wk_idnt = '201713';
-DEFINE mth = 'LY_APR';
+DEFINE start_day_idnt = '2017120';
+DEFINE end_day_idnt = '2017154';
+DEFINE start_wk_idnt = '201718';
+DEFINE end_wk_idnt = '201722';
+DEFINE mth = 'JUNE_LY';
+
+
 
 /*Email metrics*/
 --emailed 
