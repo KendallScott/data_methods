@@ -1,0 +1,29 @@
+drop table distinct_app_data_store_visit
+
+create table distinct_app_data_store_visit as
+select 
+eref.indiv_id,
+tm.wk_idnt,
+tm.day_idnt
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+where pv.session_id in (select session_id from ua_crmt_ma_conv_event where event_category = 'STORE VISIT' and event_name in( 'BEACON))
+group by eref.indiv_id, tm.wk_idnt, tm.day_idnt;
+
+/*store visit*/
+select 
+count(distinct dtl.indiv_id)                                                                                             as cust_count,
+count(distinct dtl.pos_trans_key)                                                                                 as trans,
+sum(dtl.extended_sls_amt)                                                                                            as sales,
+sum(dtl.grs_mrgn_amt)                                                                                                     as gm,
+sum(dtl.qty)                                                                                                                            as units,
+round(sum(dtl.extended_sls_amt)/count(distinct dtl.pos_trans_key), 4)  as aov
+from distinct_app_data_store_visit app
+inner join ua_pos_tm_day tm            on  app.day_idnt= tm.day_idnt
+inner join ua_pos_trans_dtl dtl        on app.indiv_id = dtl.indiv_id  and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner  join ua_store str                          on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
+where tm.wk_idnt between 201818 and 201822
+and dtl.wk_idnt between 201818 and 201822
+order by sales desc;
