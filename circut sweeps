@@ -55,3 +55,67 @@ left join (
          inner join  cricut_sweeps_customers  cricut  on ecom.indiv_id = cricut.indiv_id 
         where tm.wk_idnt between  &start_wk_idnt and &end_wk_idnt
         group by cricut.indiv_id) ecom on cricut.indiv_id = ecom.indiv_id;
+        
+        
+SELECT 
+count(distinct cricut.indiv_id)                                                                                                                                                                                                                 as emailed_customers,
+count(distinct(coalesce (stre.indiv_id, ecom.indiv_id)))                                                                                                                                                             as shopping_customers,
+sum((coalesce(stre.store_trans,0))+ (coalesce(ecom.ecom_trans, 0)))                                                                                                                                 as trans,
+sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))                                                                                                                                 as sales,
+(round(sum(stre.store_gm)/sum(stre.store_sales), 4)) *   sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))            as gm
+from  cricut_sweeps_customers  cricut
+left join (
+          select
+          cricut.indiv_id,
+          count(distinct dtl.pos_trans_key)                   as store_trans,
+          sum(dtl.extended_sls_amt)                              as store_sales,
+          sum(dtl.grs_mrgn_amt)                                       as store_gm,
+          sum(dtl.qty)                                                              as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+        inner join ua_pos_tm_day tm on dtl.day_idnt= tm.day_idnt
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+          and str.loc_cntry_desc = 'USA'
+          and dtl.indiv_id not in (select indiv_id from cricut_sweeps_customers)
+        group by cricut.indiv_id)stre on cricut.indiv_id = stre.indiv_id 
+   left join(
+    select
+        cricut.indiv_id,
+        count(distinct ecom.order_id)                         as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                            as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                    as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between  &start_wk_idnt and &end_wk_idnt
+        and ecom.indiv_id not in (select indiv_id from cricut_sweeps_customers)
+        group by cricut.indiv_id) ecom on cricut.indiv_id = ecom.indiv_id;
+        
+SELECT 
+count(distinct(coalesce (stre.indiv_id, ecom.indiv_id)))                                                                                                                                                             as shopping_customers,
+sum((coalesce(stre.store_trans,0))+ (coalesce(ecom.ecom_trans, 0)))                                                                                                                                 as trans,
+sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))                                                                                                                                 as sales,
+(round(sum(stre.store_gm)/sum(stre.store_sales), 4)) *   sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))            as gm
+from  (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                   as store_trans,
+          sum(dtl.extended_sls_amt)                              as store_sales,
+          sum(dtl.grs_mrgn_amt)                                       as store_gm,
+          sum(dtl.qty)                                                              as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+        inner join ua_pos_tm_day tm on dtl.day_idnt= tm.day_idnt
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+          and str.loc_cntry_desc = 'USA'
+          and dtl.indiv_id not in (select indiv_id from cricut_sweeps_customers)
+        group by dtl.indiv_id) stre
+   full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                         as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                            as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                    as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between  &start_wk_idnt and &end_wk_idnt
+        and ecom.indiv_id not in (select indiv_id from cricut_sweeps_customers)
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
