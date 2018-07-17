@@ -17,7 +17,8 @@ inner join ua_pos_tm_day tm2 on bps.pickup_date = tm2.day_dt;
 create table bopis_days as
 select
 ecom.indiv_id,
-min(tm.day_dt) as first_purchase
+min(tm.day_dt) as first_purchase,
+max(tm.day_dt) as last_purchase
 from ua_ecom_order_dtl ecom
 inner join bopis bps on substr(bps.order_id, 0, 10) = substr(ecom.order_id, 4, 10)
 inner join ua_pos_tm_day tm on to_date(ecom.dmnd_dt) = (tm.day_dt)
@@ -30,7 +31,7 @@ count(distinct ecom.order_id)                                            as orde
 sum(ecom.flfll_net_ttl_amt)                                               as bopis_sales,
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
-where order_id in (select order_id from bopis_orders bps inner join bopis_days days on days. indiv_id = bps.indiv_id where days.first_purchase < '04-MAY-18');
+where order_id in (select order_id from bopis_orders bps inner join bopis_days days on days. indiv_id = bps.indiv_id where days.first_purchase < '11-MAY-18');
 
 /*30 days prior to bopis order*/
 select
@@ -47,9 +48,9 @@ select
         sum(dtl.qty) as store_units
         from ua_pos_trans_dtl dtl 
         inner join ua_store str on dtl.loc_key = str.loc_key
-        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '04-MAY-18'
+        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.last_purchase < '11-MAY-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
-        where tm.day_dt between bps.first_purchase-31 and bps.first_purchase-1 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
+        where tm.day_dt between bps.last_purchase-31 and bps.last_purchase-1 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
 full outer join (
         select
@@ -59,7 +60,7 @@ full outer join (
         sum(ecom.flfll_unit_cnt) as ecom_units
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <'04-MAY-18'
+        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <'11-MAY-18'
         where tm.day_dt between bps.first_purchase-31 and bps.first_purchase-1
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
         
@@ -78,7 +79,7 @@ select
         sum(dtl.qty) as store_units
         from ua_pos_trans_dtl dtl 
         inner join ua_store str on dtl.loc_key = str.loc_key
-        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '04-MAY-18'
+        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase < '11-MAY-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
         where tm.day_dt between bps.first_purchase+3 and bps.first_purchase+33 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
@@ -90,7 +91,7 @@ full outer join (
         sum(ecom.flfll_unit_cnt) as ecom_units
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '04-MAY-18'
+        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase < '11-MAY-18'
         where tm.day_dt between  bps.first_purchase+3 and bps.first_purchase+33 
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
@@ -110,7 +111,7 @@ select
         sum(dtl.qty) as store_units
         from ua_pos_trans_dtl dtl 
         inner join ua_store str on dtl.loc_key = str.loc_key
-        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase <  '04-MAY-18'
+        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase <  '11-MAY-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
         where tm.day_dt between bps.first_purchase-365 -31 and bps.first_purchase-365 -1 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
@@ -122,7 +123,7 @@ full outer join (
         sum(ecom.flfll_unit_cnt) as ecom_units
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <  '04-MAY-18'
+        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <  '11-MAY-18'
         where tm.day_dt between bps.first_purchase-365 -31 and bps.first_purchase-365 -1
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
@@ -141,7 +142,7 @@ select
         sum(dtl.qty) as store_units
         from ua_pos_trans_dtl dtl 
         inner join ua_store str on dtl.loc_key = str.loc_key
-        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase <  '04-MAY-18'
+        inner join bopis_days bps on dtl.indiv_id = bps.indiv_id and bps.first_purchase <  '11-MAY-18'
         inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
         where tm.day_dt between bps.first_purchase-365 +3 and bps.first_purchase-365 +33 and dtl.trans_typ_key in (19,22,33) and str.distt_idnt !='999'
         group by dtl.indiv_id) stre
@@ -153,7 +154,7 @@ full outer join (
         sum(ecom.flfll_unit_cnt) as ecom_units
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
-        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <  '04-MAY-18'
+        inner join bopis_days bps on ecom.indiv_id = bps.indiv_id and bps.first_purchase <  '11-MAY-18'
         where tm.day_dt between  bps.first_purchase-365 +3 and bps.first_purchase-365 +33 
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
 
@@ -166,7 +167,7 @@ sum(ecom.flfll_net_ttl_amt)                                               as bop
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
 inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201820)
+where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201823)
 group by sku.sku_desc
 order by bopis_units desc;
 
@@ -179,7 +180,7 @@ sum(ecom.flfll_net_ttl_amt)                                               as bop
 sum(ecom.flfll_unit_cnt)                                                      as bopis_units
 from ua_ecom_order_dtl ecom
 inner join ua_pos_prod_sku sku on ecom.sku_name=sku.sku_idnt
-where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201820)
+where ecom.order_id in (select order_id from bopis_orders where wk_idnt between 201812 and 201823)
 group by sku.grp_desc
 order by bopis_units desc;
 
@@ -192,7 +193,7 @@ sum(ecom.flfll_unit_cnt)                                                      as
 from ua_ecom_order_dtl ecom
 inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
 where order_id in (select order_id from bopis_orders)
-and tm.wk_idnt between 201812 and 201820;
+and tm.wk_idnt between 201812 and 201823;
 
 /*store purchases*/
 select
@@ -203,25 +204,25 @@ sum(dtl.qty)                                                                    
 from ua_pos_trans_dtl dtl 
 inner join ua_store str on dtl.loc_key = str.loc_key and str.distt_idnt!='999'
 inner join ua_pos_tm_day tm on dtl.day_idnt = tm.day_idnt
-where dtl.wk_idnt between 201812 and 201820
+where dtl.wk_idnt between 201812 and 201823
 and dtl.indiv_id||(tm.day_dt) in (
         select ecom.indiv_id||bps.pick_up
         from ua_ecom_order_dtl ecom
         inner join bopis_orders bps on ecom.indiv_id = bps.indiv_id  
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt 
-        where tm.wk_idnt between 201812 and 201820)
+        where tm.wk_idnt between 201812 and 201823)
 and dtl.indiv_id||(tm.day_dt)||dtl.extended_sls_amt not in (
         select ecom.indiv_id||bps.pick_up||ecom.FLFLL_NET_TTL_AMT 
         from ua_ecom_order_dtl ecom 
         inner join bopis_orders bps on bps.indiv_id =ecom.indiv_id  
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = tm.day_dt 
-        where tm.wk_idnt between 201812 and 201820);
+        where tm.wk_idnt between 201812 and 201823);
 
 DEFINE start_wk_idnt = '201712';
-DEFINE end_wk_idnt = '201720';
+DEFINE end_wk_idnt = '201723';
 
 DEFINE start_wk_idnt = '201812';
-DEFINE end_wk_idnt = '201820';
+DEFINE end_wk_idnt = '201823';
 
 select
 count(distinct (coalesce(stre.indiv_id, ecom.indiv_id, bopis.indiv_id)))                                                                                                                                               as customers,
