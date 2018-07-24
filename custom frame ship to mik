@@ -1,0 +1,65 @@
+select * from shipcfcustomers where rownum <100
+drop table shipcfcustomers;
+drop table ship_cf;
+
+create table ship_cf as
+select
+rf.indiv_id, 
+cf.day_dt
+from shipcfcustomers cf
+inner join unica.ua_email em on cf.email=em.email_addr_txt
+inner join unica.ua_email_ref rf on em.email_id=rf.email_id and rf.pref_indiv_em_flg='Y'
+
+select * from ship_cf 
+
+/*New to CF but not new to Michaels*/
+drop table first_cf purge;
+drop table cf_trans_cntry purge;
+drop table first_cf_can purge;
+
+create table cf_trans_cntry as
+select distinct
+   a.indiv_id
+  ,a.day_idnt
+  ,d.loc_cntry_desc
+from         ua_pos_trans_dtl  a
+  inner join ua_pos_prod_sku   c on a.sku_key  = c.sku_key
+  inner join ua_store          d on a.loc_key  = d.loc_key
+  inner join ua_pos_tm_day tm on tm.day_idnt = a.day_idnt
+  inner join ship_cf cf on cf.indiv_id=a.indiv_id 
+where c.dept_idnt = 33;
+
+select * from cf_trans_cntry where rownum <100
+
+create table first_cf as
+select
+   a.indiv_id
+  ,min(a.day_idnt) as first_cf
+from         cf_trans_cntry  a
+where a.indiv_id in (select indiv_id from ship_cf)
+group by a.indiv_id;
+
+select * from first_cf where rownum <100
+
+create table first_cf_can as
+select
+   a.indiv_id
+  ,a.first_cf
+  ,max(case when b.loc_cntry_desc = 'CANADA' then 1 else 0 end) as can_flag
+from         first_cf       a
+  inner join cf_trans_cntry b on a.indiv_id = b.indiv_id and a.first_cf = b.day_idnt
+group by
+   a.indiv_id
+  ,a.first_cf;
+
+select
+   b.fiscal_year || b.fiscal_mth as mth_idnt
+  ,count(distinct a.indiv_id)    as new_to_cf
+from         first_cf      a
+  inner join ua_pos_tm_day b on a.first_cf = b.day_idnt
+  inner join ship_cf bps on bps.indiv_id = a.indiv_id and b.day_dt=bps.day_dt
+where a.first_cf >= 2017155
+group by b.fiscal_year || b.fiscal_mth
+order by b.fiscal_year || b.fiscal_mth;
+
+select * from ua
