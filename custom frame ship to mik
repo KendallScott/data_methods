@@ -15,7 +15,7 @@ inner join unica.ua_email em on cf.email=em.email_addr_txt
 inner join unica.ua_email_ref rf on em.email_id=rf.email_id and rf.pref_indiv_em_flg='Y'
 
 select 
-count(distinct indiv_id)
+*
 from ship_cf 
 
 /*New to CF but not new to Michaels*/
@@ -28,14 +28,14 @@ select * from ua_ecom_order_dtl where rownum <100
 create table cf_trans_cntry as
 select distinct
    a.indiv_id
-  ,a.day_idnt
-  ,d.loc_cntry_desc
+  ,min(tm.day_dt)
 from         ua_pos_trans_dtl  a
   inner join ua_pos_prod_sku   c on a.sku_key  = c.sku_key
   inner join ua_store          d on a.loc_key  = d.loc_key
   inner join ua_pos_tm_day tm on tm.day_idnt = a.day_idnt
   inner join ship_cf cf on cf.indiv_id=a.indiv_id 
-where c.dept_idnt = 33;
+  group by a.indiv_id;
+--where c.dept_idnt = 33;
 
 
 create table cf_trans_cntry as
