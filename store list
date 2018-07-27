@@ -1,0 +1,7 @@
+select
+loc_addr, 
+loc_city_name,
+loc_st_or_prvnc_desc,
+loc_pstl_cde
+from ua_store
+where loc_cntry_cde = 'USA'
