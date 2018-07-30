@@ -1,0 +1,27 @@
+drop table mobile_app_survey;
+
+create table mobile_app_survey as
+select 
+distinct
+eref.indiv_id,
+eref.email_id, 
+em.email_addr_txt
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y' and eref.valid_email_mktg_flg = 'Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt;
+/*
+where pv.session_id in (select session_id from ua_crmt_ma_conv_event where event_category = 'STORE VISIT' and event_name in ('WI-FI', 'GPS', 'BEACON'))
+and tm.wk_idnt between 201818 and 201825;*/
+
+grant select  on mobile_app_survey to public;
+
+select
+count(distinct indiv_id)
+from mobile_app_survey
+
+july only
+153,178
+
+june and july
+287205
