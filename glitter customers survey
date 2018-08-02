@@ -1,0 +1,31 @@
+DEFINE start_wk_idnt = '201801';
+DEFINE end_wk_idnt = '201825';
+
+create table shiny_customers as
+select
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                               as store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as store_gm,
+          sum(dtl.qty)                                            as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+         and sbclass_desc in ( '3407 MARTHA 2 OZ GLITTER', '0498 GLITTER', '9745 GLITTER')
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        and sbclass_desc in ( '3407 MARTHA 2 OZ GLITTER', '0498 GLITTER', '9745 GLITTER')
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
