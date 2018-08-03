@@ -1,10 +1,10 @@
 set worksheetname agg_tables;
 -------this year metrics-------
-DEFINE start_day_idnt = '2018120';
-DEFINE end_day_idnt = '2018154';
-DEFINE start_wk_idnt = '201818';
-DEFINE end_wk_idnt = '201822';
-DEFINE mth = 'JUNE';
+DEFINE start_day_idnt = '2018155';
+DEFINE end_day_idnt = '2018182';
+DEFINE start_wk_idnt = '201823';
+DEFINE end_wk_idnt = '201826';
+DEFINE mth = 'JULY';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -161,7 +161,13 @@ DEFINE start_day_idnt = '2017120';
 DEFINE end_day_idnt = '2017154';
 DEFINE start_wk_idnt = '201718';
 DEFINE end_wk_idnt = '201722';
-DEFINE mth = 'JUNE_LY';
+DEFINE mth = 'JUNE';
+
+DEFINE start_day_idnt = '2017155';
+DEFINE end_day_idnt = '2017182';
+DEFINE start_wk_idnt = '201723';
+DEFINE end_wk_idnt = '201726';
+DEFINE mth = 'LY_JULY';
 
 
 
