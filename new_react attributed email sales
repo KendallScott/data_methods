@@ -1,4 +1,133 @@
+-------this year metrics-------
+DEFINE start_day_idnt = '2018141';
+DEFINE end_day_idnt = '2018147';
+DEFINE start_wk_idnt = '201821';
+DEFINE end_wk_idnt = '201821';
+DEFINE mth = 'JUN_WK_4';
 
+create table start_wk_&mth as
+select &end_wk_idnt as end_wk_idnt,
+wk_idnt as start_wk_idnt ,
+day_idnt as start_day_idnt
+from ua_pos_tm_day
+where day_dt = 
+(
+select day_dt - 357
+from
+(select max(day_dt) as day_dt
+from ua_pos_tm_day where wk_idnt = &end_wk_idnt)
+);
+
+create table all_indivs_24mo_&mth as
+select
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id
+from (select
+          dtl.indiv_id
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between ( &end_wk_idnt - 200 + 1) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.day_idnt between  (&end_day_idnt - 2000 + 1) and &end_day_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--rolling12 
+create table rolling12trans_&mth as
+select
+coalesce(stre.indiv_id, ecom.indiv_id)                                                                                                                                                                                                                 as indiv_id,
+sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0)))                                                                                                               as total_sales,
+sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0)))                                                                                                               as total_trans,
+sum((coalesce(stre.rolling12store_units,0))+ (coalesce(ecom.rolling12ecom_units, 0)))                                                                                                               as total_units,
+sum(stre.rolling12store_gm)                                                                                                                                                                                                                                       as gm_store,
+sum(stre.rolling12store_sales)                                                                                                                                                                                                                                   as sales_store,
+(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as rolling12store_trans,
+          sum(dtl.extended_sls_amt)                               as rolling12store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as rolling12store_gm,
+          sum(dtl.qty)                                            as rolling12store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as rolling12ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as rolling12ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as rolling12ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--time frame metrics
+create table timeframe_&mth as
+select
+(case when stre.indiv_id= ecom.indiv_id then stre.indiv_id else coalesce(stre.indiv_id, ecom.indiv_id) end)                                     as indiv_id,
+sum((coalesce(stre.store_trans,0))+ (coalesce(ecom.ecom_trans, 0)))                                                                                                                   as timeframe_trans,
+sum((coalesce(stre.store_sales,0))+ (coalesce(ecom.ecom_sales, 0)))                                                                                                                   as timeframe_sales,
+sum((coalesce(stre.store_units,0))+ (coalesce(ecom.ecom_units, 0)))                                                                                                                   as timeframe_units,
+sum(stre.store_gm)                                                                                                                                                                                                                         as store_gm,
+sum(stre.store_sales)                                                                                                                                                                                                                   as store_sales,
+(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as store_trans,
+          sum(dtl.extended_sls_amt)                               as store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as store_gm,
+          sum(dtl.qty)                                            as store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+--new  and reactivated customers   
+create table last_shop_excl_&mth as
+select
+       dtl.indiv_id,
+       max(dtl.day_idnt) as last_shop
+    from ua_pos_trans_dtl dtl inner join ua_store str on dtl.loc_key = str.loc_key
+    inner join timeframe_&mth mth on dtl.indiv_id = mth.indiv_id
+    where dtl.wk_idnt < &start_wk_idnt and dtl.trans_typ_key in(19,22,33) group by dtl.indiv_id;
+
+--new and reactivated customers
+create table new_cust_&mth as
+  select            
+  distinct (indiv_id)     
+  from timeframe_&mth
+  where indiv_id not in (select distinct indiv_id from last_shop_excl_&mth);
+
+create table react_cust_&mth as
+    select distinct(indiv_id)
+    from timeframe_&mth
+    where indiv_id in (select distinct indiv_id from last_shop_excl_&mth where last_shop <= (select start_day_idnt from start_wk_&mth));
+
+create table new_react_cust_&mth as
+    select distinct indiv_id
+    from new_cust_&mth
+    union
+    select distinct indiv_id
+    from react_cust_&mth;
+    
 -----Start ROCK code-----
 DEFINE start_wk_idnt = '201821';
 DEFINE end_wk_idnt = '201821';
