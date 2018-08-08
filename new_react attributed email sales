@@ -189,3 +189,10 @@ count(distinct eas.indiv_id)              as shopping_customers,
 inner  join   email_campaigns_&week ec on  eas.indiv_id = ec.indiv_id and eas.day_idnt = ec.open_day 
 where eas.indiv_id in (select indiv_id from new_react_cust_JUN_WK_4);
 
+ select
+count(distinct eas.indiv_id)              as shopping_customers, 
+ sum(eas.trans)                                       as transactions, 
+ sum(eas.sales)                                       as sales
+ from email_attributed_sales_&week eas 
+inner  join   email_campaigns_&week ec on  eas.indiv_id = ec.indiv_id and eas.day_idnt = ec.open_day 
+where eas.indiv_id not in (select indiv_id from new_react_cust_JUN_WK_4);
