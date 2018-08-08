@@ -37,6 +37,8 @@ from (select
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
 
+
+
 --rolling12 
 create table rolling12trans_&mth as
 select
@@ -157,12 +159,6 @@ use the below definitions and rerun code above
 */
 set worksheetname agg_tables_LY;
 -------last year metrics-------
-DEFINE start_day_idnt = '2017120';
-DEFINE end_day_idnt = '2017154';
-DEFINE start_wk_idnt = '201718';
-DEFINE end_wk_idnt = '201722';
-DEFINE mth = 'JUNE';
-
 DEFINE start_day_idnt = '2017155';
 DEFINE end_day_idnt = '2017182';
 DEFINE start_wk_idnt = '201723';
@@ -284,11 +280,11 @@ when a.total_trans > 5                                        then 'Top' end) as
 from rolling12trans_&mth a
 left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
 
-drop table  month_cust_&mth 
+drop table  month_cust_&mth ;
 
 create table month_cust_&mth as
 select 
-coalesce(all_cust.indiv_id , cust_yearly.indiv_id, cust_yearly_LY.indiv_id)                    as indiv_id,
+all_cust.indiv_id                                                                                                               as indiv_id,
 tmframe.timeframe_trans                                                                                                                   as month_trans,
 tmframe.timeframe_sales                                                                                                                   as month_sales,
 tmframe.timeframe_units                                                                                                                   as month_units,
@@ -307,8 +303,6 @@ mth.gm_store                                                                    
 mth.channel                                                                                                                                              as channel_12mth,
 cust.custgroup                                                                                                                                          as monthly_customer_group,
 custly.custgroup                                                                                                                                      as monthly_customer_group_ly,
-cust_yearly.custgroup                                                                                                                           as yearly_customer_group,
-cust_yearly_LY.custgroup                                                                                                                    as yearly_customer_group_LY,
 mthly.total_sales                                                                                                                                    as ly_sales_12mth,
 mthly.total_trans                                                                                                                                    as ly_trans_12mth,
 mthly.total_units                                                                                                                                    as ly_units_12mth,
@@ -337,8 +331,6 @@ left join em_LY_&mth                                                  email_LY  
 left join em_open_LY_&mth                                     em_open_LY             on all_cust.indiv_id = em_open_LY.indiv_id
 left join dm_LY_&mth                                                  dm_LY                          on all_cust.indiv_id = dm_LY.indiv_id
 left join value_segment_&mth                                mvs_lvs                       on all_cust.indiv_id = mvs_lvs.indiv_id
-left join value_segment_LY_&mth                         mvs_lvs_LY                on all_cust.indiv_id = mvs_lvs_LY.indiv_id
-full outer join custgroup_yearly_&mth                cust_yearly               on all_cust.indiv_id =  cust_yearly.indiv_id
-full outer join custgroup_yearly_LY_&mth          cust_yearly_LY        on all_cust.indiv_id =  cust_yearly_LY.indiv_id;
+left join value_segment_LY_&mth                         mvs_lvs_LY                on all_cust.indiv_id = mvs_lvs_LY.indiv_id;
 
 grant select on month_cust_&mth to public;
