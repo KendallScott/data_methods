@@ -1,0 +1,22 @@
+select * from month_cust_JULY where rownum <100
+
+create table  migrated_top_cust as
+select
+distinct
+indiv_id
+from month_cust_JULY
+where monthly_customer_group != 'top'
+and monthly_customer_group_ly ='top'
+and trans_12mth < 4;
+
+grant select on migrated_top_cust to public;
+
+create table  stagnant_middle_cust as
+select
+distinct
+indiv_id
+from month_cust_JULY
+where monthly_customer_group = 'middle'
+and monthly_customer_group_ly ='middle';
+
+grant select on stagnant_middle_cust to public;
