@@ -263,8 +263,8 @@ and a.trans_typ_key in (19,22,33);
 
 create table custgroup_yearly_LY_&mth as
 select a.indiv_id,
-(case when b.indiv_id is null                                                         then 'New/React'
-when a.total_trans > 0 and a.total_trans <= 2                         then 'Bottom'
+(case when b.indiv_id is null                                                          then 'New/React'
+when a.total_trans > 0 and a.total_trans <= 2                          then 'Bottom'
 when a.total_trans > 2 and a.total_trans <= 5                          then 'Middle'
 when a.total_trans > 5                                                                       then 'Top' end) as custgroup
 from rolling12trans_LY_&mth a
@@ -273,10 +273,10 @@ left join cust_&mthlly b on a.indiv_id=b.indiv_id;
 --define TY customer groups
 create table custgroup_yearly_&mth as
 select a.indiv_id,
-(case when b.indiv_id is null                                                         then 'New/React'
-when a.total_trans > 0 and a.total_trans <= 2         then 'Bottom'
-when a.total_trans > 2 and a.total_trans <= 5         then 'Middle'
-when a.total_trans > 5                                                              then 'Top' end) as custgroup
+(case when b.indiv_id is null                                                          then 'New/React'
+when a.total_trans > 0 and a.total_trans <= 2                          then 'Bottom'
+when a.total_trans > 2 and a.total_trans <= 5                          then 'Middle'
+when a.total_trans > 5                                                                       then 'Top' end) as custgroup
 from rolling12trans_&mth a
 left join rolling12trans_LY_&mth b on a.indiv_id=b.indiv_id;
 
