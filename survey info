@@ -1,0 +1,19 @@
+  
+create table customer_survey as
+select
+se.email,
+rf.indiv_id
+from survey_emails se
+inner join unica.ua_email em on se.email=em.email_addr_txt
+inner join unica.ua_email_ref rf on em.email_id=rf.email_id and rf.pref_indiv_em_flg='Y';
+
+select
+cs.indiv_id,
+email,
+month_trans, 
+month_sales
+from customer_survey cs
+inner join month_cust_july mc on cs.indiv_id=mc.indiv_id;
+
+select * from month_cust_july where rownum <100
+
