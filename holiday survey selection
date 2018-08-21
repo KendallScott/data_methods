@@ -1,0 +1,20 @@
+create table holiday_2017_customers as
+select
+distinct
+indiv_id
+from ua_pos_trans_dtl 
+where wk_idnt between 201738 and 201747
+and indiv_id in (select indiv_id from ua_email_ref  where valid_email_mktg_flg='Y');
+
+grant select on holiday_2017_customers to public;
+
+create table holiday_2016_customers as
+select
+indiv_id
+from 
+ua_pos_trans_dtl 
+where wk_idnt between 201638 and 201647
+and indiv_id in (select indiv_id from ua_email_ref  where valid_email_mktg_flg='Y')
+and indiv_id not in (select indiv_id from ua_pos_trans_dtl where wk_idnt between 201738 and 201747 );
+
+grant select on holiday_2016_customers to public;
