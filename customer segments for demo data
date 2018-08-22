@@ -32,19 +32,24 @@ from month_cust_july
 where monthly_customer_group = 'new'
 and rownum<125001;
 
+drop table lapsed_customers
+
 create table lapsed_customers as
 select 
 indiv_id,
-monthly_customer_group
+'lapsed' as monthly_customer_group
 from month_cust_july 
 where monthly_customer_group is null
 and monthly_customer_group_ly is not null
 and rownum<125001;
 
-create table MIC_UA_customer_sample as
+select * from lapsed_customers where rownum <100
+
+drop table MIC_UA_IB_DATA_APPEND;
+create table MIC_UA_IB_DATA_APPEND as
 select
-coalesce(a.indiv_id, b.indiv_id, c.indiv_id, d.indiv_id, e.indiv_id) as indiv_id,
-coalesce(a.monthly_customer_group, b.monthly_customer_group, c.monthly_customer_group, d.monthly_customer_group, e.monthly_customer_group) as july_customer_group
+coalesce(a.monthly_customer_group, b.monthly_customer_group, c.monthly_customer_group, d.monthly_customer_group, e.monthly_customer_group) as SEGMENT_NAME,
+coalesce(a.indiv_id, b.indiv_id, c.indiv_id, d.indiv_id, e.indiv_id) as indiv_id
 from lapsed_customers a
 full outer join new_react_customers b on a.indiv_id=b.indiv_id
 full outer join bottom_customers c on c.indiv_id=a.indiv_id
@@ -56,6 +61,11 @@ drop table MIC_UA_customer_sample
 select count (distinct indiv_id) from MIC_UA_customer_sample
 
 select * from MIC_UA_customer_sample where rownum <100
+
+SELECT SEGMENT_NAME, COUNT(*) AS SEGEMENT_COUNT 
+FROM SCOTTK.MIC_UA_IB_DATA_APPEND
+GROUP BY SEGMENT_NAME
+
 
 create table UA_IB_DATA_APPEND  as
 select
