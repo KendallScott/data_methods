@@ -25,6 +25,7 @@ and ind.lst_name is not null
 and ind.city_name is not null
 and ind.state_province_cd is not null
 and ind.postal_cd is not null
+and ind. addr_line_1 is not null
 and rownum<125001;
 
 create table middle_customers as
@@ -39,6 +40,7 @@ and ind.lst_name is not null
 and ind.city_name is not null
 and ind.state_province_cd is not null
 and ind.postal_cd is not null
+and ind. addr_line_1 is not null
 and rownum<125001;
 
 create table bottom_customers as
@@ -53,6 +55,7 @@ and ind.lst_name is not null
 and ind.city_name is not null
 and ind.state_province_cd is not null
 and ind.postal_cd is not null
+and ind. addr_line_1 is not null
 and rownum<125001;
 
 create table new_customers as
@@ -67,7 +70,10 @@ and ind.lst_name is not null
 and ind.city_name is not null
 and ind.state_province_cd is not null
 and ind.postal_cd is not null
+and ind. addr_line_1 is not null
 and rownum<125001;
+
+select count(distinct indiv_id) from new_customers
 
 create table lapsed_customers as
 select 
@@ -82,6 +88,7 @@ and ind.lst_name is not null
 and ind.city_name is not null
 and ind.state_province_cd is not null
 and ind.postal_cd is not null
+and ind. addr_line_1 is not null
 and rownum<125001;
 
 select * from lapsed_customers where rownum <100
