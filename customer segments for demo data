@@ -56,3 +56,9 @@ drop table MIC_UA_customer_sample
 select count (distinct indiv_id) from MIC_UA_customer_sample
 
 select * from MIC_UA_customer_sample where rownum <100
+
+create table UA_IB_DATA_APPEND  as
+select
+july_customer_group as segment_name,
+indiv_id
+from MIC_UA_customer_sample
