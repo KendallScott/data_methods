@@ -1,0 +1,91 @@
+
+DEFINE start_wk_idnt = '201801';
+DEFINE end_wk_idnt = '201829';
+
+
+ select
+ str.regn_desc,
+ ind.postal_cd,
+count(distinct ecom.order_id)                            as orders,
+sum(ecom.flfll_net_ttl_amt)                               as sales,
+sum(ecom.flfll_unit_cnt)                                      as units
+from ua_ecom_order_dtl   ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+inner join ua_individual ind on ecom.indiv_id=ind.indiv_id
+inner join ua_store str on str.loc_idnt = ind.closest_mik_store_1
+where tm.wk_idnt between 201814  and 201826
+and str.regn_desc != '0009 E-COMMERCE'
+and ind.country_cd='US'
+group by   str.regn_desc,  ind.postal_cd;
+
+
+
+ select
+ str.regn_desc,
+count(distinct ecom.order_id)                            as orders,
+sum(ecom.flfll_net_ttl_amt)                               as sales,
+sum(ecom.flfll_unit_cnt)                                      as units
+from ua_ecom_order_dtl   ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+inner join ua_individual ind on ecom.indiv_id=ind.indiv_id
+inner join ua_store str on str.loc_idnt = ind.closest_mik_store_1
+where tm.wk_idnt between 201814  and 201826
+and str.regn_desc != '0009 E-COMMERCE'
+and ind.country_cd='US'
+group by   str.regn_desc
+order by str.regn_desc;
+
+ select
+ str.regn_desc,
+count(distinct ecom.order_id)                            as orders,
+sum(ecom.flfll_net_ttl_amt)                               as sales,
+sum(ecom.flfll_unit_cnt)                                      as units
+from ua_ecom_order_dtl   ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+inner join ua_individual ind on ecom.indiv_id=ind.indiv_id
+inner join ua_store str on str.loc_idnt = ind.closest_mik_store_1
+where tm.wk_idnt between 201714  and 201726
+and str.regn_desc != '0009 E-COMMERCE'
+and ind.country_cd='US'
+group by   str.regn_desc
+order by str.regn_desc;
+
+
+
+ select
+ str.regn_desc,
+ ind.postal_cd,
+count(distinct ecom.order_id)                            as orders,
+sum(ecom.flfll_net_ttl_amt)                               as sales,
+sum(ecom.flfll_unit_cnt)                                      as units
+from ua_ecom_order_dtl   ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+inner join ua_individual ind on ecom.indiv_id=ind.indiv_id
+inner join ua_store str on str.loc_idnt = ind.closest_mik_store_1
+where tm.wk_idnt between 201714  and 201726
+and str.regn_desc != '0009 E-COMMERCE'
+and ind.country_cd='US'
+group by   str.regn_desc,  ind.postal_cd;
+
+ select
+ str.regn_desc,
+count(distinct ecom.order_id)                            as orders,
+sum(ecom.flfll_net_ttl_amt)                               as sales,
+sum(ecom.flfll_unit_cnt)                                      as units
+from ua_ecom_order_dtl   ecom
+inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+inner join ua_individual ind on ecom.indiv_id=ind.indiv_id
+inner join ua_store str on str.loc_idnt = ind.closest_mik_store_1
+where tm.wk_idnt between 201701 and 201729
+and str.regn_desc != '0009 E-COMMERCE'
+and ind.country_cd='US'
+group by   str.regn_desc;
+
+
+
+select * from ua_individual where rownum <100
+select * from ua_store where rownum <100
+
+ind.closest_mik_store_1
+
+regn_desc
