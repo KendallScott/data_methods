@@ -10,6 +10,7 @@ from unica.ua_crmt_ma_page_view pv
 inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
 inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y' and eref.valid_email_mktg_flg = 'Y'
 inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
-where tm.day_idnt between 2018148 and 2018178;
+where tm.day_idnt between 2018179 and 2018209
+and pv.session_id in (select session_id from ua_crmt_ma_conv_event where event_category = 'STORE VISIT' and event_name in ('WI-FI', 'GPS', 'BEACON'));
 
 grant select  on mobile_app_survey to public;
