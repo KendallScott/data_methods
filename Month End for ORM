@@ -1,10 +1,10 @@
-set worksheetname agg_tables;
+set worksheetname agg_tables
 -------this year metrics-------
-DEFINE start_day_idnt = '2018155';
-DEFINE end_day_idnt = '2018182';
-DEFINE start_wk_idnt = '201823';
-DEFINE end_wk_idnt = '201826';
-DEFINE mth = 'JULY';
+DEFINE start_day_idnt = '2018183';
+DEFINE end_day_idnt = '2018210';
+DEFINE start_wk_idnt = '201827';
+DEFINE end_wk_idnt = '201830';
+DEFINE mth = 'AUG';
 
 create table start_wk_&mth as
 select &end_wk_idnt as end_wk_idnt,
@@ -36,8 +36,6 @@ from (select
         where tm.day_idnt between  (&end_day_idnt - 2000 + 1) and &end_day_idnt
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
 group by stre.indiv_id, ecom.indiv_id;
-
-
 
 --rolling12 
 create table rolling12trans_&mth as
@@ -159,13 +157,12 @@ use the below definitions and rerun code above
 */
 set worksheetname agg_tables_LY;
 -------last year metrics-------
-DEFINE start_day_idnt = '2017155';
-DEFINE end_day_idnt = '2017182';
-DEFINE start_wk_idnt = '201723';
-DEFINE end_wk_idnt = '201726';
-DEFINE mth = 'LY_JULY';
 
-
+DEFINE start_day_idnt = '2017183';
+DEFINE end_day_idnt = '2017210';
+DEFINE start_wk_idnt = '201727';
+DEFINE end_wk_idnt = '201730';
+DEFINE mth = 'LY_AUG';
 
 /*Email metrics*/
 --emailed 
