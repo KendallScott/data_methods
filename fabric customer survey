@@ -1,0 +1,21 @@
+DEFINE start_wk_idnt = '201701';
+DEFINE end_wk_idnt = '201831';
+
+drop table fabric_customers;
+
+create table fabric_customers as
+  select
+ecom.indiv_id,
+count(distinct order_id) as fabric_trans
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        and grp_desc in ('NEEDLE CRAFTS')
+        and sku.class_desc in ('602 FABRIC')
+        group by ecom.indiv_id;
+        
+        
+        select
+        count(distinct indiv_id) 
+        from fabric_customers
