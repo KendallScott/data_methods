@@ -1,0 +1,7 @@
+select
+*
+from ua_loyalty loy
+inner join ua_individual ind on loy.indiv_id=ind.indiv_id
+where loy.wedding_rewards_mem_flg = 'Y'
+and ind.state_province_cd ='TX'
+and ind.indiv_id in (select indiv_id from ua_email_ref where valid_email_mktg_flg='Y');
