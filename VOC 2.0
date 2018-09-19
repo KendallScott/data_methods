@@ -1,0 +1,64 @@
+/* wifi,  gps, or beacon */
+drop table distinct_app_data_store_visit;
+
+create table distinct_app_data_store_visit as
+select 
+max(session_id) as session_id,
+ROW_NUMBER() OVER
+(PARTITION BY session_id ORDER BY timestamp ASC) as record_number,
+eref.indiv_id,
+pv.storeid,
+tm.wk_idnt,
+tm.day_idnt
+from unica.ua_crmt_ma_page_view pv
+inner join unica.ua_email em on pv.customer_email=em.email_addr_txt
+inner join unica.ua_email_ref eref on em.email_id=eref.email_id and eref.pref_indiv_em_flg='Y'
+inner join unica.ua_pos_tm_day tm on trunc(pv.timestamp) = tm.day_dt
+where pv.session_id in (select session_id from ua_crmt_ma_conv_event where event_category = 'STORE VISIT' and event_name in ('WI-FI', 'GPS', 'BEACON'))
+group by eref.indiv_id, pv.storeid, tm.wk_idnt, tm.day_idnt, pv.timestamp, pv.session_id;
+drop table distinct_app_store_visit;
+create table distinct_app_store_visit as
+select 
+session_id,
+indiv_id,
+storeid,
+wk_idnt,
+day_idnt
+from distinct_app_data_store_visit
+where record_number||indiv_id||wk_idnt||day_idnt in ( select max(record_number)||indiv_id||wk_idnt||day_idnt from distinct_app_data_store_visit group by indiv_id, wk_idnt, day_idnt)
+
+
+create table non_purchasers as 
+select
+tm.day_dt as store_date,
+em.email_addr_txt as email
+from distinct_app_store_visit app
+inner join ua_pos_tm_day tm on app.day_idnt= tm.day_idnt
+left join ua_pos_trans_dtl dtl on app.indiv_id = dtl.indiv_id and tm.day_idnt = dtl.day_idnt
+inner join ua_email_ref rf on rf.indiv_id = app.indiv_id and rf.pref_indiv_em_flg = 'Y'  AND rf.valid_email_mktg_flg = 'Y'
+inner join ua_email em on em.email_id=rf.email_id
+where tm.day_idnt between 2018224 and 2018224
+and dtl.indiv_id is null
+group by tm.day_dt, em.email_addr_txt;
+
+
+create table mobile_app_customers as
+select
+dtl.pos_trans_key,
+tm.day_dt as store_date,
+em.email_addr_txt as email,
+str.loc_desc as location_desc,
+str.loc_addr ||' '|| str.loc_city_name||', '||str.loc_st_or_prvnc_desc ||' '||str.loc_pstl_cde as address,
+sum(dtl.extended_sls_amt) as sales,
+sum(dtl.grs_mrgn_amt) as gm,
+sum(dtl.qty) as units
+from distinct_app_store_visit app
+inner join ua_pos_tm_day tm                   on app.day_idnt= tm.day_idnt
+inner join ua_pos_trans_dtl dtl                on app.indiv_id = dtl.indiv_id and tm.day_idnt = dtl.day_idnt and dtl.trans_typ_key in (19,22,33)
+inner join ua_store str                                 on str.loc_key = dtl.loc_key and str.distt_idnt != '999'
+inner join ua_pos_prod_sku sku             on dtl.sku_key = sku.sku_key
+inner join ua_email_ref rf                         on rf.indiv_id = dtl.indiv_id and rf.pref_indiv_em_flg = 'Y'  AND rf.valid_email_mktg_flg = 'Y'
+inner join ua_email em                              on em.email_id=rf.email_id
+where tm.day_idnt between 2018224 and 2018224
+group by dtl.pos_trans_key, tm.day_dt, em.email_addr_txt, str.loc_desc , str.loc_addr,  str.loc_city_name, str.loc_st_or_prvnc_desc, str.loc_pstl_cde;
+
