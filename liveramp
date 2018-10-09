@@ -204,3 +204,17 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.dept_desc='29 CMAS DECOR'
         group by ecom.indiv_id) ecom_xmas on roll.indiv_id=ecom_xmas .indiv_id;
+        
+        select 
+        count(distinct indiv_id) as customers,
+        floral_shopper,
+        decor_shopper,
+        cricut_shopper,
+        yarn_shopper,
+        art_shopper,
+        pumpkin_shopper,
+        kids_shopper,
+        christmas_shopper
+        from liveramp
+        group by         floral_shopper, decor_shopper, cricut_shopper, yarn_shopper, art_shopper, pumpkin_shopper, kids_shopper, christmas_shopper
+        order by customers desc
