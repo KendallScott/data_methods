@@ -262,4 +262,36 @@ left join(
         from liveramp
         group by floral_shopper, decor_shopper, cricut_shopper, yarn_shopper, art_shopper, pumpkin_shopper, kids_shopper, christmas_shopper, lpos_shopper, cyber_week_shopper, black_friday_shopper
         order by customers desc
-c
+
+/*
+NOTES
+Floral Shopper
+      grp_desc in ('FLORAL', 'CUSTOM FLORAL')
+Decor Shopper
+      dept_idnt in (74, 77, 78, 26)
+Cricut/Cricut Accessory Shopper
+    class_desc in ('081 CRICUT', '581 CRICUT CARTRIDGES')
+Yarn/Knitting Shopper
+      dept_desc ='40 YARN'
+Fine Arts Shopping
+    grp_desc = 'ART SUPPLIES'
+Pumpkin Shopper (not sure how we'd identify this one)
+    sbclass_desc in ('5404 CARVABLE PUMPKINS', '5255 TRAD PUMPKINS', '9069 FALL PUMPKIN DECOR', '6724 VELVET PUMPKIN EC')
+Kids Shopper
+    div_desc='KIDS/TWEENS'
+Christmas Decor Shopper (Trees/Accessories)
+        dept_desc='29 CMAS DECOR'
+        */
+        
+/*
+        time frames
+        
+Black Friday Shopper
+    day_idnt between 2017300 and 2017302
+    
+Cyber Week Shopper
+    wk_idnt =201743
+Last 2 LPOS Shopper
+
+*/
+
