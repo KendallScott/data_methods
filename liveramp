@@ -289,3 +289,4 @@ left join(
         from liveramp
         group by         floral_shopper, decor_shopper, cricut_shopper, yarn_shopper, art_shopper, pumpkin_shopper, kids_shopper, christmas_shopper
         order by customers desc
+c
