@@ -21,8 +21,12 @@ Christmas Decor Shopper (Trees/Accessories)
         time frames
         
 Black Friday Shopper
+    day_idnt between 2017300 and 2017302
+    
 Cyber Week Shopper
+    wk_idnt =201743
 Last 2 LPOS Shopper
+
 */
 
 -------this year metrics-------
@@ -55,6 +59,8 @@ from (select
         inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id;
+        
+        drop table liveramp;
 
 create table liveramp as
 select
@@ -66,9 +72,13 @@ case when coalesce(yarn.indiv_id, ecom_yarn.indiv_id) is not null then 'Y' else 
 case when coalesce(art.indiv_id, ecom_art.indiv_id) is not null then 'Y' else 'N' end as art_shopper,
 case when coalesce(pumpkin.indiv_id, ecom_pumpkin.indiv_id) is not null then 'Y' else 'N' end as pumpkin_shopper,
 case when coalesce(kids.indiv_id, ecom_kids.indiv_id) is not null then 'Y' else 'N' end as kids_shopper,
-case when coalesce(xmas.indiv_id, ecom_xmas.indiv_id) is not null then 'Y' else 'N' end as christmas_shopper
+case when coalesce(xmas.indiv_id, ecom_xmas.indiv_id) is not null then 'Y' else 'N' end as christmas_shopper,
+case when coalesce(lpos.indiv_id, ecom_lpos.indiv_id) is not null then 'Y' else 'N' end as lpos_shopper,
+case when coalesce(cyber.indiv_id, ecom_cyber.indiv_id) is not null then 'Y' else 'N' end as cyber_week_shopper,
+case when coalesce(bf.indiv_id, ecom_bf.indiv_id) is not null then 'Y' else 'N' end as black_friday_shopper
 from rolling12_shoppers roll
-left join(select
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
@@ -77,7 +87,7 @@ left join(select
          and sku.grp_desc in ('FLORAL', 'CUSTOM FLORAL')
         group by dtl.indiv_id) floral on roll.indiv_id=floral.indiv_id
 left join(
-    select
+         select
         ecom.indiv_id
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
@@ -85,7 +95,8 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.grp_desc in ('FLORAL', 'CUSTOM FLORAL')
         group by ecom.indiv_id) ecom_floral on roll.indiv_id=ecom_floral.indiv_id
- left join(select
+ left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
@@ -94,7 +105,7 @@ left join(
          and sku.dept_idnt in (74, 77, 78, 26)
         group by dtl.indiv_id) decor on roll.indiv_id=decor.indiv_id
 left join(
-    select
+        select
         ecom.indiv_id
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
@@ -102,7 +113,8 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.dept_idnt in (74, 77, 78, 26)
         group by ecom.indiv_id) ecom_decor on roll.indiv_id=ecom_decor.indiv_id
-left join(select
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
@@ -111,7 +123,7 @@ left join(select
          and sku.class_desc in ('081 CRICUT', '581 CRICUT CARTRIDGES')
         group by dtl.indiv_id) cricut on roll.indiv_id=cricut.indiv_id
 left join(
-    select
+        select
         ecom.indiv_id
         from ua_ecom_order_dtl   ecom
         inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
@@ -119,14 +131,15 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.class_desc in ('081 CRICUT', '581 CRICUT CARTRIDGES')
         group by ecom.indiv_id) ecom_cricut on roll.indiv_id=ecom_cricut.indiv_id
-left join(select
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
          and sku.dept_desc ='40 YARN'
-        group by dtl.indiv_id) yarn  on roll.indiv_id=yarn .indiv_id
+        group by dtl.indiv_id) yarn  on roll.indiv_id=yarn.indiv_id
 left join(
     select
         ecom.indiv_id
@@ -135,15 +148,16 @@ left join(
         inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.dept_desc ='40 YARN'
-        group by ecom.indiv_id) ecom_yarn on roll.indiv_id=ecom_yarn .indiv_id       
-left join(select
+        group by ecom.indiv_id) ecom_yarn on roll.indiv_id=ecom_yarn.indiv_id       
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
          and sku.grp_desc = 'ART SUPPLIES'
-        group by dtl.indiv_id) art  on roll.indiv_id=art .indiv_id
+        group by dtl.indiv_id) art  on roll.indiv_id=art.indiv_id
 left join(
     select
         ecom.indiv_id
@@ -152,15 +166,16 @@ left join(
         inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.grp_desc = 'ART SUPPLIES'
-        group by ecom.indiv_id) ecom_art on roll.indiv_id=ecom_art .indiv_id               
-left join(select
+        group by ecom.indiv_id) ecom_art on roll.indiv_id=ecom_art.indiv_id               
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
          and sku.sbclass_desc in ('5404 CARVABLE PUMPKINS', '5255 TRAD PUMPKINS', '9069 FALL PUMPKIN DECOR', '6724 VELVET PUMPKIN EC')
-        group by dtl.indiv_id) pumpkin  on roll.indiv_id=pumpkin .indiv_id
+        group by dtl.indiv_id) pumpkin  on roll.indiv_id=pumpkin.indiv_id
 left join(
     select
         ecom.indiv_id
@@ -170,14 +185,15 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.sbclass_desc in ('5404 CARVABLE PUMPKINS', '5255 TRAD PUMPKINS', '9069 FALL PUMPKIN DECOR', '6724 VELVET PUMPKIN EC')
         group by ecom.indiv_id) ecom_pumpkin on roll.indiv_id=ecom_pumpkin.indiv_id      
-left join(select
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
          and sku.div_desc='KIDS/TWEENS'
-        group by dtl.indiv_id) kids  on roll.indiv_id=kids .indiv_id
+        group by dtl.indiv_id) kids  on roll.indiv_id=kids.indiv_id
 left join(
     select
         ecom.indiv_id
@@ -187,14 +203,15 @@ left join(
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.div_desc='KIDS/TWEENS'
         group by ecom.indiv_id) ecom_kids on roll.indiv_id=ecom_kids.indiv_id   
-left join(select
+left join(
+          select
           dtl.indiv_id
          from         ua_pos_trans_dtl dtl
          inner join ua_store str on dtl.loc_key = str.loc_key
          inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
          where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
          and sku.dept_desc='29 CMAS DECOR'
-        group by dtl.indiv_id) xmas   on roll.indiv_id=xmas  .indiv_id
+        group by dtl.indiv_id) xmas   on roll.indiv_id=xmas.indiv_id
 left join(
     select
         ecom.indiv_id
@@ -203,7 +220,61 @@ left join(
         inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and sku.dept_desc='29 CMAS DECOR'
-        group by ecom.indiv_id) ecom_xmas on roll.indiv_id=ecom_xmas .indiv_id;
+        group by ecom.indiv_id) ecom_xmas on roll.indiv_id=ecom_xmas .indiv_id
+left join(
+          select
+          dtl.indiv_id
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+         and dtl.wk_idnt in (201807, 201821)
+        group by dtl.indiv_id) LPOS   on roll.indiv_id=LPOS .indiv_id
+left join(
+    select
+        ecom.indiv_id
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        and tm.wk_idnt in (201807, 201821)
+        group by ecom.indiv_id) ecom_LPOS on roll.indiv_id=ecom_LPOS.indiv_id
+left join(
+          select
+          dtl.indiv_id
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+         and dtl.wk_idnt in (201744)
+        group by dtl.indiv_id) cyber   on roll.indiv_id=cyber .indiv_id
+left join(
+    select
+        ecom.indiv_id
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        and tm.wk_idnt in (201744)
+        group by ecom.indiv_id) ecom_cyber on roll.indiv_id=ecom_cyber.indiv_id
+left join(
+          select
+          dtl.indiv_id
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         inner join ua_pos_prod_sku sku         on dtl.sku_key = sku.sku_key
+         where dtl.wk_idnt between &start_wk_idnt and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+         and dtl.day_idnt between 2017300 and 2017302
+        group by dtl.indiv_id) bf   on roll.indiv_id=bf .indiv_id
+left join(
+    select
+        ecom.indiv_id
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
+        where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
+        and tm.day_idnt between 2017300 and 2017302
+        group by ecom.indiv_id) ecom_bf on roll.indiv_id=ecom_bf.indiv_id;        
         
         select 
         count(distinct indiv_id) as customers,
