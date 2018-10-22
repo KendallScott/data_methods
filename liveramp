@@ -1,6 +1,6 @@
 -------this year metrics-------
-DEFINE start_wk_idnt = '201734';
-DEFINE end_wk_idnt = '201835';
+DEFINE start_wk_idnt = '201738';
+DEFINE end_wk_idnt = '201837';
 
 drop table customers_rolling12;
 
@@ -45,7 +45,8 @@ case when coalesce(kids.indiv_id, ecom_kids.indiv_id) is not null then 'Y' else 
 case when coalesce(xmas.indiv_id, ecom_xmas.indiv_id) is not null then 'Y' else 'N' end as christmas_shopper,
 case when coalesce(lpos.indiv_id, ecom_lpos.indiv_id) is not null then 'Y' else 'N' end as lpos_shopper,
 case when coalesce(cyber.indiv_id, ecom_cyber.indiv_id) is not null then 'Y' else 'N' end as cyber_week_shopper,
-case when coalesce(bf.indiv_id, ecom_bf.indiv_id) is not null then 'Y' else 'N' end as black_friday_shopper
+case when coalesce(bf.indiv_id, ecom_bf.indiv_id) is not null then 'Y' else 'N' end as black_friday_shopper,
+case when aaron_bros.indiv_id is not null then 'Y' else 'N' end as aaron_brothers_customer
 from rolling12_shoppers roll
 left join(
           select
@@ -244,7 +245,13 @@ left join(
         inner join ua_pos_prod_sku sku on ecom.sku_name = sku.sku_idnt
         where tm.wk_idnt between &start_wk_idnt and &end_wk_idnt
         and tm.day_idnt between 2017300 and 2017302
-        group by ecom.indiv_id) ecom_bf on roll.indiv_id=ecom_bf.indiv_id;        
+        group by ecom.indiv_id) ecom_bf on roll.indiv_id=ecom_bf.indiv_id
+left join(
+    select 
+      a.indiv_id
+      from ua_individual_source     a
+      inner join ua_individual b on a.indiv_id=b.indiv_id
+      where data_src_cd = 'AARON_BROS') aaron_bros on roll.indiv_id = aaron_bros.indiv_id;        
         
         select 
         count(distinct indiv_id) as customers,
