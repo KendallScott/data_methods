@@ -1,0 +1,24 @@
+
+select 
+`CAMPAIGN`,
+count(`CALL ID`) as calls,
+`DATE`,
+DATE_FORMAT(`DATE`, '%W') as weekday
+from `five9_disposition`
+where `DISPOSITION`!='Recycle'
+group by `DATE`, `CAMPAIGN`,DATE_FORMAT(`DATE`, '%W')  
+
+select 
+a.*, 
+b.`calls` as 'last week calls'
+from `tower_calls` a
+left join `tower_calls` b on a.`date` = date_add(b.`date`, INTERVAL 1 WEEK) and a.`CAMPAIGN`=b.`CAMPAIGN`
+
+select 
+`CAMPAIGN`, 
+`calls`,
+`last week calls`,
+`DATE`,
+`weekday`,
+`calls`-`last week calls` as 'WoW'
+from `wow`
