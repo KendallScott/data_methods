@@ -84,3 +84,41 @@ while (LastId>0) {
 
 DomoR::init('x', 'x')
 DomoR::replace_ds('x', df)
+
+## visits
+library(httr)
+library(jsonlite)
+library(lubridate)
+library(XML)
+library(xml2)
+
+url  <- "https://api.repsly.com"
+path <- "/v3/export/visits/0"
+username <- "x"
+password <- "x"
+raw.result <- GET(url = url, path=path, authenticate(username,  password, type = "basic"))
+
+this.raw.content <- rawToChar(raw.result$content)
+LastTimeStamp <-gsub(pattern= ".*<LastTimeStamp>|</LastTimeStamp>.*", replacement="", this.raw.content)
+
+this.raw.content.new <-gsub(pattern= "<MetaCollectionResult>.*</MetaCollectionResult>", replacement="", this.raw.content)
+this.raw.new <-gsub(pattern= "</Visits>|<Visits>", replacement="", this.raw.content.new)
+df <-xmlToDataFrame(this.raw.new)
+
+
+while (LastTimeStamp>0) {
+  url  <- "https://api.repsly.com"
+  path <- paste("/v3/export/visits/",LastTimeStamp)
+  path <-gsub(" ", "", path)
+  username <- "x"
+  password <- "x"
+  raw.result <- GET(url = url, path=path, authenticate(username,  password, type = "basic"))
+  this.raw.content.new <-gsub(pattern= "<MetaCollectionResult>.*</MetaCollectionResult>", replacement="", this.raw.content)
+  this.raw.new <-gsub(pattern= "</Visits>|<Visits>", replacement="", this.raw.content.new)
+  LastTimeStamp <-gsub(pattern= ".*<LastTimeStamp>|</LastTimeStamp>.*", replacement="", raw.result)
+  
+  df2 <-xmlToDataFrame(this.raw.new)
+  df <- rbind(df2, df)
+}
+DomoR::init('x', 'x')
+DomoR::replace_ds('x', df)
