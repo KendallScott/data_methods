@@ -37,3 +37,50 @@ while (LastTimeStamp>0) {
 }
 DomoR::init('x', 'x')
 DomoR::replace_ds('x', df)
+
+## Forms
+library(httr)
+library(jsonlite)
+library(lubridate)
+library(XML)
+library(xml2)
+
+url  <- "https://api.repsly.com"
+path <- "/v3/export/forms/0"
+username <- "x"
+password <- "x"
+raw.result <- GET(url = url, path=path, authenticate(username,  password, type = "basic"))
+
+this.raw.content <- rawToChar(raw.result$content)
+LastId <-gsub(pattern= ".*<LastID>|</LastID>.*", replacement="", this.raw.content)
+
+this.raw.content.new <-gsub(pattern= "<MetaCollectionResult>.*</MetaCollectionResult>", replacement="", this.raw.content)
+this.raw.new <-gsub(pattern= "</Forms>|<Forms>", replacement="", this.raw.content.new)
+#this.raw.new <-gsub(pattern= "</Items>|<Items>", replacement="", this.raw.content)
+this.raw.new <-gsub(pattern= "</Field>", replacement="_;_</Field>", this.raw.new)
+this.raw.new <-gsub(pattern= "</Value>", replacement=":_;_:</Value>", this.raw.new)
+
+df <-xmlToDataFrame(this.raw.new)
+
+while (LastId>0) {
+  url  <- "https://api.repsly.com"
+
+  path <-gsub(" ", "", path)
+  username <- "x"
+  password <- "x"
+  raw.result <- GET(url = url, path=path, authenticate(username,  password, type = "basic"))
+  this.raw.content <- rawToChar(raw.result$content)
+  this.raw.content.new <-gsub(pattern= "<MetaCollectionResult>.*</MetaCollectionResult>", replacement="", this.raw.content)
+  this.raw.new <-gsub(pattern= "</Forms>|<Forms>", replacement="", this.raw.content.new)
+  this.raw.new <-gsub(pattern= "</Field>", replacement="_;_</Field>", this.raw.new)
+  this.raw.new <-gsub(pattern= "</Value>", replacement=":_;_:</Value>", this.raw.new)
+  LastId <-gsub(pattern= ".*<LastID>|</LastID>.*", replacement="", this.raw.content)
+  path <- paste("/v3/export/forms/",LastId)
+  
+  df2 <-xmlToDataFrame(this.raw.new)
+  df <- rbind(df2, df)
+}
+
+
+DomoR::init('x', 'x')
+DomoR::replace_ds('x', df)
