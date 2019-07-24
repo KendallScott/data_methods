@@ -1,0 +1,39 @@
+setwd("C:/R/Tower")
+library(dplyr)
+library(readr)
+
+library(tidyverse)
+library(lubridate)
+library(data.table)  
+
+one <- read.csv("1.csv")
+two <- read.csv("2.csv")
+three <- read.csv("3.csv")
+four <- read.csv("4.csv")
+five <- read.csv("5.csv")
+six <- read.csv("6.csv")
+seven <- read.csv("7.csv")
+eight <- read.csv("8.csv")
+nine <- read.csv("9.csv")
+ten <- read.csv("10.csv")
+eleven <- read.csv("11.csv")
+
+
+one <- tbl_df(one)
+two <- tbl_df(two)
+three <- tbl_df(three)
+four <- tbl_df(four)
+five <- tbl_df(five)
+six <- tbl_df(six)
+seven- tbl_df(seven)
+eight <- tbl_df(eight)
+nine <- tbl_df(nine)
+ten <- tbl_df(ten)
+eleven <- tbl_df(eleven)
+
+df <- rbind(one, two, three, four, five, six, seven, eight, nine, ten, eleven)
+
+
+DomoR::init('x', 'x')
+#DomoR::create(one, name="Tower_calls", description="upload of CSVs from five9")
+DomoR::replace_ds('x', df)
